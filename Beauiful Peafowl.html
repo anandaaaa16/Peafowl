@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Beautiful Peafowl</title>
+<style>
+  :root{
+    --ink: #6b4552;
+    --navy: #f3c7d3;
+    --navy-dark: #e8a9bc;
+    --paper: #fdf6f3;
+    --paper-line: #f0d9de;
+    --brass: #e8a9bc;
+    --brass-light: #f6d3dd;
+    --wax: #e08098;
+    --wax-dark: #c96580;
+    --sky: #fde8ee;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    height: 100%;
+    margin: 0;
+  }
+
+  body{
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at 15% 15%, rgba(255,255,255,0.9), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(255,255,255,0.7), transparent 45%),
+      linear-gradient(160deg, #fff5f7 0%, #fbe4ea 55%, #f6d3dd 100%);
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    color: var(--ink);
+    padding: 32px 20px;
+    position: relative;
+  }
+
+  .floating-hearts{
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .floating-hearts span{
+    position: absolute;
+    font-size: 1.1rem;
+    color: rgba(224, 128, 152, 0.28);
+    animation: float-up 9s linear infinite;
+  }
+  @keyframes float-up{
+    0%{ transform: translateY(0) rotate(0deg); opacity: 0; }
+    10%{ opacity: 1; }
+    90%{ opacity: 1; }
+    100%{ transform: translateY(-110vh) rotate(12deg); opacity: 0; }
+  }
+
+  .stage{
+    position: relative;
+    z-index: 1;
+    width: min(90vw, 420px);
+    perspective: 1400px;
+    margin-bottom: 20px;
+  }
+
+  .hint{
+    text-align: center;
+    color: #c9748f;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    margin-bottom: 22px;
+    opacity: 0.85;
+    transition: opacity 0.4s ease;
+  }
+
+  .hint.hide{ opacity: 0; }
+
+  /* ---------- ENVELOPE ---------- */
+  .envelope{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .envelope:focus-visible .body{
+    outline: 2px solid var(--brass-light);
+    outline-offset: 4px;
+  }
+
+  .notif-badge{
+    position: absolute;
+    top: -10px;
+    right: 2%;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(160deg, #f27a99, #d95a7d);
+    color: #fff;
+    font-size: 0.72rem;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(217,90,125,0.45);
+    animation: badge-pop 0.5s ease 0.3s both, badge-pulse 1.8s ease-in-out 1s infinite;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  @keyframes badge-pop{
+    0%{ transform: scale(0); }
+    70%{ transform: scale(1.15); }
+    100%{ transform: scale(1); }
+  }
+  @keyframes badge-pulse{
+    0%, 100%{ box-shadow: 0 4px 10px rgba(217,90,125,0.45); }
+    50%{ box-shadow: 0 4px 16px rgba(217,90,125,0.7); }
+  }
+  .envelope.open .notif-badge{
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  .body{
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-dark) 100%);
+    border-radius: 6px;
+    box-shadow: 0 30px 60px -20px rgba(224,128,152,0.35), 0 4px 10px rgba(200,100,130,0.18);
+    overflow: hidden;
+    z-index: 2;
+  }
+
+  .body::before{
+    /* bottom triangle fold */
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -2px;
+    height: 62%;
+    background: linear-gradient(160deg, #f6d3dd, #eeb7c6);
+    clip-path: polygon(0 100%, 50% 30%, 100% 100%);
+  }
+
+  .side-left, .side-right{
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(200,110,135,0.12));
+  }
+  .side-left{ left: 0; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+  .side-right{ right: 0; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+
+  .letter{
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    top: 12%;
+    height: 76%;
+    background: var(--paper);
+    border-radius: 3px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    z-index: 1;
+    transition: transform 1.1s cubic-bezier(.2,.9,.25,1), box-shadow 1.1s ease;
+    transform-origin: top center;
+    padding: 26px 22px;
+    overflow: hidden;
+  }
+
+  .letter-lines{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .letter-lines span{
+    display: block;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--paper-line);
+  }
+  .letter-lines span:nth-child(1){ width: 78%; }
+  .letter-lines span:nth-child(2){ width: 92%; }
+  .letter-lines span:nth-child(3){ width: 65%; }
+  .letter-lines span:nth-child(4){ width: 85%; }
+
+  .flap{
+    position: absolute;
+    left: 0; right: 0; top: -1px;
+    height: 58%;
+    background: linear-gradient(200deg, #f8dbe3, var(--navy));
+    clip-path: polygon(0 0, 100% 0, 50% 92%);
+    transform-origin: top center;
+    transform: rotateX(0deg);
+    transition: transform 0.9s cubic-bezier(.4,0,.2,1);
+    z-index: 3;
+    box-shadow: 0 2px 6px rgba(200,110,135,0.2);
+  }
+
+  .flap::after{
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 22%;
+    width: 46px;
+    height: 46px;
+    transform: translate(-50%, -50%) rotate(-8deg);
+    background:
+      radial-gradient(circle at 30% 30%, rgba(255,255,255,0.55), transparent 60%);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C4 20 0 13 0 8 C0 3 4 0 8 0 C12 0 15 3 16 6 C17 3 20 0 24 0 C28 0 32 3 32 8 C32 13 28 20 16 29 Z'/></svg>") center/contain no-repeat;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C4 20 0 13 0 8 C0 3 4 0 8 0 C12 0 15 3 16 6 C17 3 20 0 24 0 C28 0 32 3 32 8 C32 13 28 20 16 29 Z'/></svg>") center/contain no-repeat;
+    opacity: 0.5;
+  }
+
+  .seal{
+    position: absolute;
+    left: 50%;
+    top: 40%;
+    width: 46px;
+    height: 46px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--wax) 0%, var(--wax-dark) 70%);
+    box-shadow: 0 3px 8px rgba(200,100,130,0.4), inset 0 -3px 6px rgba(160,70,95,0.35), inset 0 2px 4px rgba(255,255,255,0.35);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.4s ease, opacity 0.5s ease;
+  }
+  .seal::after{
+    content: "";
+    width: 19px;
+    height: 17px;
+    background: rgba(255, 240, 244, 0.9);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C4 20 0 13 0 8 C0 3 4 0 8 0 C12 0 15 3 16 6 C17 3 20 0 24 0 C28 0 32 3 32 8 C32 13 28 20 16 29 Z'/></svg>") center/contain no-repeat;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C4 20 0 13 0 8 C0 3 4 0 8 0 C12 0 15 3 16 6 C17 3 20 0 24 0 C28 0 32 3 32 8 C32 13 28 20 16 29 Z'/></svg>") center/contain no-repeat;
+  }
+
+  /* ---------- OPEN STATE ---------- */
+  .envelope.open .flap{
+    transform: rotateX(180deg);
+    z-index: 1;
+  }
+  .envelope.open .seal{
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4) rotate(25deg);
+  }
+  .envelope.open .letter{
+    transform: translateY(-64%) scale(1.06);
+    box-shadow: 0 26px 40px -12px rgba(0,0,0,0.5);
+  }
+  .envelope.open .body{
+    z-index: 3;
+  }
+
+  /* ---------- FULL LETTER OVERLAY ---------- */
+  .overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(230, 170, 190, 0.45);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+    z-index: 10;
+    padding: 24px;
+  }
+  .overlay.show{
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .paper-sheet{
+    width: min(92vw, 480px);
+    max-height: 84vh;
+    overflow-y: auto;
+    background: var(--paper);
+    background-image:
+      repeating-linear-gradient(180deg, transparent, transparent 27px, rgba(232,169,188,0.22) 28px);
+    border-radius: 4px;
+    box-shadow: 0 30px 60px rgba(200,100,130,0.35);
+    padding: 44px 40px 40px;
+    position: relative;
+    transform: translateY(24px) scale(0.96);
+    opacity: 0;
+    transition: transform 0.55s cubic-bezier(.2,.9,.25,1), opacity 0.5s ease;
+  }
+  .overlay.show .paper-sheet{
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  .paper-sheet::before{
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 46px;
+    background: linear-gradient(90deg, rgba(224,128,152,0.1), transparent);
+  }
+
+  .corner-heart{
+    position: absolute;
+    width: 16px;
+    height: 15px;
+    opacity: 0.35;
+    background: var(--wax);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C4 20 0 13 0 8 C0 3 4 0 8 0 C12 0 15 3 16 6 C17 3 20 0 24 0 C28 0 32 3 32 8 C32 13 28 20 16 29 Z'/></svg>") center/contain no-repeat;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C4 20 0 13 0 8 C0 3 4 0 8 0 C12 0 15 3 16 6 C17 3 20 0 24 0 C28 0 32 3 32 8 C32 13 28 20 16 29 Z'/></svg>") center/contain no-repeat;
+  }
+  .corner-heart.tl{ top: 16px; left: 18px; }
+  .corner-heart.br{ bottom: 16px; right: 18px; transform: rotate(180deg); }
+
+  .close-btn{
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(224,128,152,0.12);
+    color: var(--ink);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+  }
+  .close-btn:hover{ background: rgba(224,128,152,0.22); }
+
+  .salutation{
+    font-size: 1.05rem;
+    margin: 0 0 18px;
+    color: var(--navy-dark);
+  }
+
+  .message-bubble{
+    position: relative;
+    background: linear-gradient(160deg, #ffeef3, #fde0e8);
+    border-radius: 18px 18px 18px 4px;
+    padding: 20px 20px 18px;
+    margin: 0 0 20px;
+    box-shadow: 0 6px 16px rgba(217,90,125,0.16);
+    animation: bubble-in 0.5s cubic-bezier(.2,.9,.25,1) 0.2s both;
+  }
+  .message-bubble::before{
+    content: "";
+    position: absolute;
+    left: -7px;
+    bottom: 10px;
+    width: 16px;
+    height: 16px;
+    background: #fde0e8;
+    border-radius: 3px;
+    transform: rotate(45deg);
+  }
+  @keyframes bubble-in{
+    0%{ opacity: 0; transform: translateY(10px) scale(0.97); }
+    100%{ opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .bubble-tag{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.03em;
+    color: #d95a7d;
+    margin: 0 0 10px;
+  }
+  .bubble-tag .mini-heart{
+    display: inline-block;
+    width: 10px;
+    height: 9px;
+    background: #e08098;
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C4 20 0 13 0 8 C0 3 4 0 8 0 C12 0 15 3 16 6 C17 3 20 0 24 0 C28 0 32 3 32 8 C32 13 28 20 16 29 Z'/></svg>") center/contain no-repeat;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C4 20 0 13 0 8 C0 3 4 0 8 0 C12 0 15 3 16 6 C17 3 20 0 24 0 C28 0 32 3 32 8 C32 13 28 20 16 29 Z'/></svg>") center/contain no-repeat;
+    animation: mini-beat 1.1s ease-in-out infinite;
+  }
+  @keyframes mini-beat{
+    0%, 100%{ transform: scale(1); }
+    50%{ transform: scale(1.25); }
+  }
+
+  .message{
+    font-size: 1.02rem;
+    line-height: 1.85rem;
+    color: var(--ink);
+    margin: 0;
+    white-space: pre-line;
+  }
+
+  .signature{
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--navy-dark);
+    text-align: right;
+    margin: 0;
+  }
+
+  @media (max-width: 420px){
+    .paper-sheet{ padding: 34px 22px 28px; }
+    .message{ font-size: 0.96rem; line-height: 1.7rem; }
+  }
+
+  @media (max-height: 560px){
+    .hint{ margin-bottom: 12px; font-size: 0.72rem; }
+    .stage{ width: min(70vw, 340px); }
+    .paper-sheet{ padding: 28px 22px 24px; max-height: 90vh; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .flap, .letter, .seal, .overlay, .paper-sheet{ transition: none !important; }
+  }
+
+  /* ---------- PEMICU KOMENTAR (kompak) ---------- */
+  .comments-trigger{
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(224,128,152,0.3);
+    border-radius: 999px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .comments-trigger:hover{ background: rgba(255,255,255,0.85); transform: translateY(-1px); }
+  .comments-trigger:focus-visible{ outline: 2px solid var(--brass-light); outline-offset: 3px; }
+
+  .comments-trigger-text{
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.82rem;
+    color: #c9587c;
+  }
+
+  /* ---------- POP-UP KOMENTAR (gaya chat) ---------- */
+  .comments-sheet{
+    display: flex;
+    flex-direction: column;
+    max-height: 480px;
+    overflow: hidden;
+    padding: 30px 24px 20px;
+  }
+
+  .comments-heading{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    color: var(--navy-dark);
+    margin: 0 0 14px;
+  }
+  .comments-heading .mini-heart{
+    display: inline-block;
+    width: 12px;
+    height: 11px;
+    background: var(--wax);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C4 20 0 13 0 8 C0 3 4 0 8 0 C12 0 15 3 16 6 C17 3 20 0 24 0 C28 0 32 3 32 8 C32 13 28 20 16 29 Z'/></svg>") center/contain no-repeat;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C4 20 0 13 0 8 C0 3 4 0 8 0 C12 0 15 3 16 6 C17 3 20 0 24 0 C28 0 32 3 32 8 C32 13 28 20 16 29 Z'/></svg>") center/contain no-repeat;
+  }
+
+  /* area chat: tinggi dipatok supaya hanya ~3 pesan terbaru yang kelihatan,
+     sisanya tinggal scroll ke atas */
+  .comments-list-wrap{
+    height: 230px;
+    overflow-y: auto;
+    margin: 0 -6px 10px;
+    padding: 2px 6px;
+    scroll-behavior: smooth;
+  }
+
+  .comments-list{
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 100%;
+    justify-content: flex-end;
+  }
+
+  .comment-item{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    animation: bubble-in 0.3s ease both;
+  }
+
+  .comment-name{
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #c9587c;
+    margin: 0 0 3px 6px;
+  }
+
+  .comment-bubble{
+    position: relative;
+    background: linear-gradient(160deg, #ffffff, #fdf0f4);
+    border-radius: 4px 14px 14px 14px;
+    padding: 8px 34px 8px 12px;
+    box-shadow: 0 2px 6px rgba(217,90,125,0.1);
+    max-width: 86%;
+  }
+
+  .comment-text{
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--ink);
+    margin: 0;
+    word-break: break-word;
+  }
+
+  .comment-time{
+    position: absolute;
+    right: 10px;
+    bottom: 6px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.6rem;
+    color: #d7a3b3;
+    white-space: nowrap;
+  }
+
+  .comments-empty{
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.8rem;
+    color: #c9748f;
+    text-align: center;
+    padding: 18px 0;
+    opacity: 0.75;
+  }
+
+  /* bar input polos ala WhatsApp: tanpa kotak, cukup garis tipis + placeholder samar */
+  .comment-form{
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(224,128,152,0.18);
+    flex: none;
+  }
+
+  .name-field{
+    border: none;
+    background: transparent;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.68rem;
+    color: #c9587c;
+    padding: 0 4px;
+    outline: none;
+    width: fit-content;
+    max-width: 60%;
+  }
+  .name-field::placeholder{ color: rgba(201,88,124,0.4); }
+
+  .message-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .message-field{
+    flex: 1;
+    border: none;
+    border-bottom: 1px solid rgba(224,128,152,0.25);
+    background: transparent;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.92rem;
+    color: var(--ink);
+    padding: 8px 4px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .message-field::placeholder{
+    color: rgba(201,88,124,0.38);
+    font-style: italic;
+  }
+  .message-field:focus{ border-bottom-color: var(--wax); }
+
+  .comment-form .hp-field{
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  .comment-send{
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(160deg, #f27a99, #d95a7d);
+    color: #fff;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(217,90,125,0.35);
+    transition: transform 0.15s ease, opacity 0.2s ease;
+  }
+  .comment-send:hover{ transform: translateY(-1px) scale(1.05); }
+  .comment-send:disabled{ opacity: 0.55; cursor: default; transform: none; }
+
+  .comment-status{
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.7rem;
+    color: #c9748f;
+    min-height: 14px;
+    margin: 2px 0 0 4px;
+  }
+
+  @media (max-width: 420px){
+    .comments-sheet{ padding: 24px 18px 16px; }
+  }
+</style>
+</head>
+
+<body>
+
+  <div class="floating-hearts" aria-hidden="true">
+    <span style="left:8%; animation-delay:0s;">♥</span>
+    <span style="left:22%; animation-delay:2.4s; font-size:0.8rem;">♥</span>
+    <span style="left:78%; animation-delay:1.1s;">♥</span>
+    <span style="left:63%; animation-delay:4s; font-size:0.9rem;">♥</span>
+    <span style="left:90%; animation-delay:3s;">♥</span>
+    <span style="left:40%; animation-delay:5.5s; font-size:0.75rem;">♥</span>
+  </div>
+
+  <div class="stage">
+    <p class="hint" id="hint">Open This Letter</p>
+
+    <div class="envelope" id="envelope" role="button" tabindex="0" aria-label="Buka amplop untuk membaca surat">
+      <span class="notif-badge" aria-hidden="true">1</span>
+      <div class="letter">
+        <div class="letter-lines">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="side-left"></div>
+      <div class="side-right"></div>
+      <div class="body"></div>
+      <div class="flap"></div>
+      <div class="seal"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="paper-sheet">
+      <button class="close-btn" id="closeBtn" aria-label="Tutup surat">✕</button>
+      <span class="corner-heart tl"></span>
+      <span class="corner-heart br"></span>
+      <p class="salutation">Peafowl♡</p>
+      <div class="message-bubble">
+        <p class="bubble-tag"><span class="mini-heart"></span>For Peafowl</p>
+        <p class="message">Halo Peafowl♡
+Thank you for worrying me, i have some trip with company to Indonesia ⸜(｡˃ ᵕ ˂ )⸝♡ It will be long trip for me and kinda busy, so thats why i build this website only for you ♡
+
+We can talk here while my trip ya, you can check every 6 hours and i will give you updates my journey in Indonesia („• ֊ •„)੭ Im already in flight now.
+
+-Ananda ⋆˙⟡</p>
+      </div>
+      <p class="signature">— Peafowl</p>
+    </div>
+  </div>
+
+  <button type="button" class="comments-trigger" id="commentsTrigger">
+    <span class="mini-heart"></span>
+    <span class="comments-trigger-text">Reply Here Peafowl ⸜(｡˃ ᵕ ˂ )⸝♡</span>
+  </button>
+
+  <div class="overlay" id="commentsOverlay">
+    <div class="paper-sheet comments-sheet">
+      <button class="close-btn" id="commentsCloseBtn" aria-label="Tutup balasan">✕</button>
+      <h2 class="comments-heading"><span class="mini-heart"></span> Reply here~</h2>
+
+      <div class="comments-list-wrap">
+        <div class="comments-list" id="commentsList">
+          <p class="comments-empty" id="commentsEmpty">memuat balasan...</p>
+        </div>
+      </div>
+
+      <form class="comment-form" id="commentForm">
+        <input type="text" id="commentName" class="name-field" placeholder="nama kamu" value="Peafowl" maxlength="40" autocomplete="off">
+        <div class="message-row">
+          <input type="text" id="commentMessage" class="message-field" placeholder="reply here" maxlength="300" required autocomplete="off">
+          <input type="text" class="hp-field" id="hpField" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button type="submit" class="comment-send" id="commentSubmit" aria-label="Kirim balasan">♥</button>
+        </div>
+        <p class="comment-status" id="commentStatus"></p>
+      </form>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ====== GANTI DUA BARIS INI dengan URL & anon key project Supabase kamu ======
+  const SUPABASE_URL = 'https://vyrmeihqaljugjnysbxs.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_OfHSvklftlzryhEJbbNsCg_hNAKvWhU';
+  // ================================================================================
+
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const commentsTrigger = document.getElementById('commentsTrigger');
+  const commentsOverlay = document.getElementById('commentsOverlay');
+  const commentsCloseBtn = document.getElementById('commentsCloseBtn');
+  const commentsListWrap = document.querySelector('.comments-list-wrap');
+
+  const commentForm = document.getElementById('commentForm');
+  const commentName = document.getElementById('commentName');
+  const commentMessage = document.getElementById('commentMessage');
+  const hpField = document.getElementById('hpField');
+  const commentSubmit = document.getElementById('commentSubmit');
+  const commentStatus = document.getElementById('commentStatus');
+  const commentsList = document.getElementById('commentsList');
+  const commentsEmpty = document.getElementById('commentsEmpty');
+
+  const renderedIds = new Set();
+
+  function openComments(){
+    commentsOverlay.classList.add('show');
+    scrollToBottom();
+  }
+  function closeComments(){
+    commentsOverlay.classList.remove('show');
+  }
+
+  commentsTrigger.addEventListener('click', openComments);
+  commentsCloseBtn.addEventListener('click', closeComments);
+  commentsOverlay.addEventListener('click', (e) => {
+    if(e.target === commentsOverlay) closeComments();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && commentsOverlay.classList.contains('show')) closeComments();
+  });
+
+  function scrollToBottom(){
+    requestAnimationFrame(() => {
+      commentsListWrap.scrollTop = commentsListWrap.scrollHeight;
+    });
+  }
+
+  // jam kirim persis, per balasan (per "enter") — bukan waktu relatif,
+  // supaya gampang bedain sesi balasan yang satu dengan yang lain
+  function formatSentTime(dateStr){
+    const d = new Date(dateStr);
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    if(sameDay) return timePart;
+    const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+    return datePart + ', ' + timePart;
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderComment(row){
+    if(row.id != null){
+      if(renderedIds.has(row.id)) return;
+      renderedIds.add(row.id);
+    }
+    commentsEmpty.remove?.();
+    const item = document.createElement('div');
+    item.className = 'comment-item';
+    item.innerHTML = `
+      <p class="comment-name">${escapeHtml(row.name)}</p>
+      <div class="comment-bubble">
+        <p class="comment-text">${escapeHtml(row.message)}</p>
+        <span class="comment-time">${formatSentTime(row.created_at)}</span>
+      </div>
+    `;
+    commentsList.appendChild(item);
+    scrollToBottom();
+  }
+
+  async function loadComments(){
+    const { data, error } = await supabaseClient
+      .from('comments')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(50);
+
+    if(error){
+      commentsEmpty.textContent = 'belum bisa memuat balasan. cek pengaturan Supabase kamu.';
+      console.error(error);
+      return;
+    }
+
+    if(!data || data.length === 0){
+      commentsEmpty.textContent = 'Write your letter here 💌';
+      return;
+    }
+
+    commentsList.innerHTML = '';
+    data.forEach(row => renderComment(row));
+    scrollToBottom();
+  }
+
+  commentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // honeypot sederhana: bot biasanya ikut mengisi field tersembunyi ini
+    if(hpField.value){ return; }
+
+    const name = commentName.value.trim() || 'Peafowl';
+    const message = commentMessage.value.trim();
+    if(!message) return;
+
+    commentSubmit.disabled = true;
+
+    const { data, error } = await supabaseClient
+      .from('comments')
+      .insert({ name, message })
+      .select()
+      .single();
+
+    if(error){
+      commentStatus.textContent = 'gagal mengirim, coba lagi ya.';
+      console.error(error);
+      commentSubmit.disabled = false;
+      return;
+    }
+
+    // tampil instan begitu terkirim (per enter), tanpa perlu tunggu apa pun
+    renderComment(data);
+    commentMessage.value = '';
+    commentStatus.textContent = '';
+    commentSubmit.disabled = false;
+    commentMessage.focus();
+  });
+
+  // live update: balasan dari siapa pun (di perangkat lain) langsung tampil juga
+  supabaseClient
+    .channel('comments-live')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
+      renderComment(payload.new);
+    })
+    .subscribe();
+
+  loadComments();
+</script>
+
+<script>
+  const envelope = document.getElementById('envelope');
+  const overlay = document.getElementById('overlay');
+  const closeBtn = document.getElementById('closeBtn');
+  const hint = document.getElementById('hint');
+
+  function openLetter(){
+    envelope.classList.add('open');
+    hint.classList.add('hide');
+    setTimeout(() => {
+      overlay.classList.add('show');
+    }, 650);
+  }
+
+  function closeLetter(){
+    overlay.classList.remove('show');
+    setTimeout(() => {
+      envelope.classList.remove('open');
+      hint.classList.remove('hide');
+    }, 400);
+  }
+
+  envelope.addEventListener('click', openLetter);
+  envelope.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      openLetter();
+    }
+  });
+
+  closeBtn.addEventListener('click', closeLetter);
+  overlay.addEventListener('click', (e) => {
+    if(e.target === overlay) closeLetter();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && overlay.classList.contains('show')) closeLetter();
+  });
+</script>
+
+</body>
+</html>
