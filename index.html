@@ -891,7 +891,7 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
   const typingChannel = supabaseClient.channel('typing-status');
   let hideTypingTimeout = null;
   let typingDebounceTimer = null;
-  const TYPING_DEBOUNCE_MS = 500;
+  const TYPING_DEBOUNCE_MS = 300;
 
   typingChannel
     .on('broadcast', { event: 'typing' }, ({ payload }) => {
@@ -899,7 +899,7 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
       typingIndicator.classList.toggle('admin', !!payload?.admin);
       typingIndicator.hidden = false;
       clearTimeout(hideTypingTimeout);
-      hideTypingTimeout = setTimeout(() => { typingIndicator.hidden = true; }, 3200);
+      hideTypingTimeout = setTimeout(() => { typingIndicator.hidden = true; }, 5200);
     })
     .subscribe();
 
