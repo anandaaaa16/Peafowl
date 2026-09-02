@@ -537,6 +537,27 @@
     white-space: nowrap;
   }
 
+  /* mode "*admin" — bubble beda biar gak nyatu sama default Peafowl:
+     rata kanan dan warna biru */
+  .comment-item.admin{
+    align-items: flex-end;
+  }
+  .comment-item.admin .comment-name{
+    margin: 0 6px 3px 0;
+    color: #4b7de0;
+  }
+  .comment-bubble.admin{
+    background: linear-gradient(160deg, #6fa3ff, #4b7de0);
+    border-radius: 14px 4px 14px 14px;
+    box-shadow: 0 2px 6px rgba(75,125,224,0.25);
+  }
+  .comment-bubble.admin .comment-text{
+    color: #fff;
+  }
+  .comment-bubble.admin .comment-time{
+    color: rgba(255,255,255,0.75);
+  }
+
   .comments-empty{
     font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
     font-size: 0.8rem;
@@ -668,9 +689,9 @@
       <button class="close-btn" id="closeBtn" aria-label="Tutup surat">✕</button>
       <span class="corner-heart tl"></span>
       <span class="corner-heart br"></span>
-      <p class="salutation">Letter For You ♡</p>
+      <p class="salutation">For Peafowl</p>
       <div class="message-bubble">
-        <p class="bubble-tag"><span class="mini-heart"></span>For Peafowl</p>
+        <p class="bubble-tag"><span class="mini-heart"></span> Letter For You ♡</p>
         <p class="message">Good Morning Peafowl Rise And Shine ♡
 Today i will start my job with company and doing some meeting with client (˶ᵔ ᵕ ᵔ˶) For you don't forget to breakfast ya ♡
 
@@ -734,9 +755,11 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
   const commentsEmpty = document.getElementById('commentsEmpty');
 
   const renderedIds = new Set();
+  let lastSeenAt = null;
 
   function openComments(){
     commentsOverlay.classList.add('show');
+    syncMissed();
     scrollToBottom();
   }
   function closeComments(){
@@ -750,6 +773,13 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
   });
   document.addEventListener('keydown', (e) => {
     if(e.key === 'Escape' && commentsOverlay.classList.contains('show')) closeComments();
+  });
+
+  // kalau tab sempat di-background lalu dibuka lagi, koneksi realtime bisa
+  // sempat putus tanpa ketahuan — begitu tab aktif lagi, cek balasan yang
+  // mungkin kelewat selama itu
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible') syncMissed();
   });
 
   function scrollToBottom(){
@@ -776,18 +806,29 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
     return div.innerHTML;
   }
 
+  const ADMIN_TRIGGER = /^\*admin\s*/i;
+
   function renderComment(row){
     if(row.id != null){
       if(renderedIds.has(row.id)) return;
       renderedIds.add(row.id);
     }
+    if(!lastSeenAt || new Date(row.created_at) > new Date(lastSeenAt)){
+      lastSeenAt = row.created_at;
+    }
     commentsEmpty.remove?.();
+
+    const rawMessage = row.message || '';
+    const isAdmin = ADMIN_TRIGGER.test(rawMessage);
+    const cleanMessage = isAdmin ? rawMessage.replace(ADMIN_TRIGGER, '') : rawMessage;
+    const displayName = isAdmin ? 'Ananda' : row.name;
+
     const item = document.createElement('div');
-    item.className = 'comment-item';
+    item.className = 'comment-item' + (isAdmin ? ' admin' : '');
     item.innerHTML = `
-      <p class="comment-name">${escapeHtml(row.name)}</p>
-      <div class="comment-bubble">
-        <p class="comment-text">${escapeHtml(row.message)}</p>
+      <p class="comment-name">${escapeHtml(displayName)}</p>
+      <div class="comment-bubble${isAdmin ? ' admin' : ''}">
+        <p class="comment-text">${escapeHtml(cleanMessage)}</p>
         <span class="comment-time">${formatSentTime(row.created_at)}</span>
       </div>
     `;
@@ -796,26 +837,44 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
   }
 
   async function loadComments(){
+    // ambil 50 balasan TERBARU (urutan turun dulu), baru dibalik urutannya
+    // biar tampilannya tetap dari lama ke baru seperti chat
     const { data, error } = await supabaseClient
       .from('comments')
       .select('*')
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(50);
 
     if(error){
-      commentsEmpty.textContent = 'Load Error.';
+      commentsEmpty.textContent = 'Connection field.';
       console.error(error);
       return;
     }
 
     if(!data || data.length === 0){
-      commentsEmpty.textContent = 'Write your letter here 💌';
+      commentsEmpty.textContent = 'belum ada balasan. jadilah yang pertama 💌';
       return;
     }
 
     commentsList.innerHTML = '';
-    data.forEach(row => renderComment(row));
+    renderedIds.clear();
+    data.reverse().forEach(row => renderComment(row));
     scrollToBottom();
+  }
+
+  // sinkronisasi ringan: cuma ambil balasan yang lebih baru dari yang
+  // terakhir kita lihat, tanpa mengosongkan ulang seluruh daftar
+  async function syncMissed(){
+    if(!lastSeenAt) return;
+    const { data, error } = await supabaseClient
+      .from('comments')
+      .select('*')
+      .gt('created_at', lastSeenAt)
+      .order('created_at', { ascending: true })
+      .limit(50);
+
+    if(error || !data) return;
+    data.forEach(row => renderComment(row));
   }
 
   commentForm.addEventListener('submit', async (e) => {
@@ -837,7 +896,7 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
       .single();
 
     if(error){
-      commentStatus.textContent = 'Failed send, try again Peafowl~.';
+      commentStatus.textContent = 'failed sending letter.';
       console.error(error);
       commentSubmit.disabled = false;
       return;
