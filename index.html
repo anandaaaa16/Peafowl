@@ -556,7 +556,6 @@
   }
   .comment-bubble.admin .comment-time{
     color: rgba(255,255,255,0.75);
-    text-align: left;
   }
 
   .comments-empty{
@@ -666,6 +665,8 @@
     display: none;
   }
   .typing-indicator #typingName{ font-weight: 700; font-style: normal; }
+  .typing-indicator.admin #typingName{ color: #4b7de0; }
+  .typing-indicator.admin .typing-dots span{ background: #4b7de0; }
 
   .typing-dots{
     display: inline-flex;
@@ -791,13 +792,13 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
 
   <button type="button" class="comments-trigger" id="commentsTrigger">
     <span class="mini-heart"></span>
-    <span class="comments-trigger-text">Reply Here Peafowl ⸜(｡˃ ᵕ ˂ )⸝♡</span>
+    <span class="comments-trigger-text">Chat Here Peafowl ⸜(｡˃ ᵕ ˂ )⸝♡</span>
   </button>
 
   <div class="overlay" id="commentsOverlay">
     <div class="paper-sheet comments-sheet">
       <button class="close-btn" id="commentsCloseBtn" aria-label="Tutup balasan">✕</button>
-      <h2 class="comments-heading"><span class="mini-heart"></span> Reply here~</h2>
+      <h2 class="comments-heading"><span class="mini-heart"></span> Private Chat</h2>
 
       <div class="comments-list-wrap">
         <div class="comments-list" id="commentsList">
@@ -806,7 +807,7 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
       </div>
 
       <p class="typing-indicator" id="typingIndicator" hidden>
-        <span id="typingName"></span> typing<span class="typing-dots"><span></span><span></span><span></span></span>
+        <span id="typingName"></span> sedang mengetik<span class="typing-dots"><span></span><span></span><span></span></span>
       </p>
 
       <form class="comment-form" id="commentForm">
@@ -827,8 +828,8 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // ====== GANTI DUA BARIS INI dengan URL & anon key project Supabase kamu ======
-  const SUPABASE_URL = 'https://vyrmeihqaljugjnysbxs.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_OfHSvklftlzryhEJbbNsCg_hNAKvWhU';
+  const SUPABASE_URL = 'https://xxxxxxxxxxxx.supabase.co';
+  const SUPABASE_ANON_KEY = 'ganti-dengan-anon-public-key-kamu';
   // ================================================================================
 
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -889,26 +890,35 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
   // status ini cuma sinyal sekilas antar-browser, tidak disimpan ke database
   const typingChannel = supabaseClient.channel('typing-status');
   let hideTypingTimeout = null;
-  let lastTypingSentAt = 0;
+  let typingDebounceTimer = null;
+  const TYPING_DEBOUNCE_MS = 700;
 
   typingChannel
     .on('broadcast', { event: 'typing' }, ({ payload }) => {
       typingName.textContent = payload?.name || 'Seseorang';
+      typingIndicator.classList.toggle('admin', !!payload?.admin);
       typingIndicator.hidden = false;
       clearTimeout(hideTypingTimeout);
       hideTypingTimeout = setTimeout(() => { typingIndicator.hidden = true; }, 2200);
     })
     .subscribe();
 
+  // debounce: nunggu kamu berhenti ngetik sejenak (700ms) baru dikirim,
+  // jadi statusnya udah pasti sesuai isi terakhir — gak akan sempat
+  // kelihatan "Peafowl" dulu baru berubah "Ananda"
   commentMessage.addEventListener('input', () => {
-    const now = Date.now();
-    if(now - lastTypingSentAt < 1200) return;
-    lastTypingSentAt = now;
-    typingChannel.send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { name: commentName.value.trim() || 'Peafowl' }
-    });
+    clearTimeout(typingDebounceTimer);
+    typingDebounceTimer = setTimeout(() => {
+      const isAdminTyping = ADMIN_TRIGGER.test(commentMessage.value);
+      typingChannel.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: {
+          name: isAdminTyping ? 'Ananda' : (commentName.value.trim() || 'Peafowl'),
+          admin: isAdminTyping
+        }
+      });
+    }, TYPING_DEBOUNCE_MS);
   });
 
   function openComments(){
@@ -921,7 +931,9 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
     emojiPanel.hidden = true;
     emojiToggle.classList.remove('active');
     typingIndicator.hidden = true;
+    typingIndicator.classList.remove('admin');
     clearTimeout(hideTypingTimeout);
+    clearTimeout(typingDebounceTimer);
   }
 
   commentsTrigger.addEventListener('click', openComments);
@@ -1004,13 +1016,13 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
       .limit(50);
 
     if(error){
-      commentsEmpty.textContent = 'Failed load message. check the connection.';
+      commentsEmpty.textContent = 'Failed load message. Check your connection.';
       console.error(error);
       return;
     }
 
     if(!data || data.length === 0){
-      commentsEmpty.textContent = 'Sent your letter here. be the first person here 💌';
+      commentsEmpty.textContent = 'belum ada balasan. jadilah yang pertama 💌';
       return;
     }
 
@@ -1054,7 +1066,7 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
       .single();
 
     if(error){
-      commentStatus.textContent = 'gagal mengirim, coba lagi ya.';
+      commentStatus.textContent = 'Failed sending message, try again.';
       console.error(error);
       commentSubmit.disabled = false;
       return;
