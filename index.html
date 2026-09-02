@@ -497,7 +497,7 @@
   .comment-item{
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-end;
     animation: bubble-in 0.3s ease both;
   }
 
@@ -506,14 +506,14 @@
     font-size: 0.68rem;
     font-weight: 700;
     color: #c9587c;
-    margin: 0 0 3px 6px;
+    margin: 0 6px 3px 0;
   }
 
   .comment-bubble{
     position: relative;
     background: linear-gradient(160deg, #ffffff, #fdf0f4);
-    border-radius: 4px 14px 14px 14px;
-    padding: 8px 34px 8px 12px;
+    border-radius: 14px 4px 14px 14px;
+    padding: 8px 12px;
     box-shadow: 0 2px 6px rgba(217,90,125,0.1);
     max-width: 86%;
   }
@@ -528,9 +528,9 @@
   }
 
   .comment-time{
-    position: absolute;
-    right: 10px;
-    bottom: 6px;
+    display: block;
+    margin-top: 3px;
+    text-align: right;
     font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
     font-size: 0.6rem;
     color: #d7a3b3;
@@ -538,17 +538,17 @@
   }
 
   /* mode "*admin" — bubble beda biar gak nyatu sama default Peafowl:
-     rata kanan dan warna biru */
+     rata kiri dan warna biru */
   .comment-item.admin{
-    align-items: flex-end;
+    align-items: flex-start;
   }
   .comment-item.admin .comment-name{
-    margin: 0 6px 3px 0;
+    margin: 0 0 3px 6px;
     color: #4b7de0;
   }
   .comment-bubble.admin{
     background: linear-gradient(160deg, #6fa3ff, #4b7de0);
-    border-radius: 14px 4px 14px 14px;
+    border-radius: 4px 14px 14px 14px;
     box-shadow: 0 2px 6px rgba(75,125,224,0.25);
   }
   .comment-bubble.admin .comment-text{
@@ -556,6 +556,7 @@
   }
   .comment-bubble.admin .comment-time{
     color: rgba(255,255,255,0.75);
+    text-align: left;
   }
 
   .comments-empty{
@@ -591,6 +592,7 @@
   .name-field::placeholder{ color: rgba(201,88,124,0.4); }
 
   .message-row{
+    position: relative;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -648,6 +650,90 @@
     min-height: 14px;
     margin: 2px 0 0 4px;
   }
+
+  /* ---------- INDIKATOR SEDANG MENGETIK ---------- */
+  .typing-indicator{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.7rem;
+    font-style: italic;
+    color: #c9748f;
+    margin: 0 0 6px 4px;
+  }
+  .typing-indicator[hidden]{
+    display: none;
+  }
+  .typing-indicator #typingName{ font-weight: 700; font-style: normal; }
+
+  .typing-dots{
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .typing-dots span{
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #e08098;
+    animation: typing-bounce 1.1s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2){ animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3){ animation-delay: 0.3s; }
+  @keyframes typing-bounce{
+    0%, 60%, 100%{ transform: translateY(0); opacity: 0.5; }
+    30%{ transform: translateY(-3px); opacity: 1; }
+  }
+
+  /* ---------- EMOJI ---------- */
+  .emoji-toggle{
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: rgba(224,128,152,0.12);
+    color: #c9587c;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .emoji-toggle:hover{ background: rgba(224,128,152,0.22); }
+  .emoji-toggle.active{ background: var(--wax); color: #fff; transform: scale(1.05); }
+
+  .emoji-panel{
+    position: absolute;
+    left: 0;
+    bottom: 44px;
+    width: 216px;
+    max-height: 160px;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(217,90,125,0.25);
+    padding: 8px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2px;
+    z-index: 20;
+  }
+  .emoji-panel[hidden]{
+    display: none;
+  }
+  .emoji-panel button{
+    border: none;
+    background: transparent;
+    font-size: 1.1rem;
+    padding: 5px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .emoji-panel button:hover{ background: rgba(224,128,152,0.15); transform: scale(1.15); }
 
   @media (max-width: 420px){
     .comments-sheet{ padding: 24px 18px 16px; }
@@ -719,12 +805,19 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
         </div>
       </div>
 
+      <p class="typing-indicator" id="typingIndicator" hidden>
+        <span id="typingName"></span> sedang mengetik<span class="typing-dots"><span></span><span></span><span></span></span>
+      </p>
+
       <form class="comment-form" id="commentForm">
         <input type="text" id="commentName" class="name-field" placeholder="nama kamu" value="Peafowl" maxlength="40" autocomplete="off">
         <div class="message-row">
+          <button type="button" class="emoji-toggle" id="emojiToggle" aria-label="Pilih emoji">☺</button>
           <input type="text" id="commentMessage" class="message-field" placeholder="reply here" maxlength="300" required autocomplete="off">
           <input type="text" class="hp-field" id="hpField" tabindex="-1" autocomplete="off" aria-hidden="true">
           <button type="submit" class="comment-send" id="commentSubmit" aria-label="Kirim balasan">♥</button>
+
+          <div class="emoji-panel" id="emojiPanel" hidden></div>
         </div>
         <p class="comment-status" id="commentStatus"></p>
       </form>
@@ -753,9 +846,70 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
   const commentStatus = document.getElementById('commentStatus');
   const commentsList = document.getElementById('commentsList');
   const commentsEmpty = document.getElementById('commentsEmpty');
+  const emojiToggle = document.getElementById('emojiToggle');
+  const emojiPanel = document.getElementById('emojiPanel');
+  const typingIndicator = document.getElementById('typingIndicator');
+  const typingName = document.getElementById('typingName');
 
   const renderedIds = new Set();
   let lastSeenAt = null;
+
+  // ---------- EMOJI PICKER ----------
+  const EMOJI_LIST = ['❤️','💕','💖','💗','💘','💌','🥰','😍','😘','🤗','☺️','😊','😂','🙈','😢','😅','✨','🌟','🌸','🌷','☁️','🌙','👉👈','💫'];
+
+  emojiPanel.innerHTML = EMOJI_LIST.map(e => `<button type="button">${e}</button>`).join('');
+
+  emojiToggle.addEventListener('click', () => {
+    const willOpen = emojiPanel.hidden;
+    emojiPanel.hidden = !willOpen;
+    emojiToggle.classList.toggle('active', willOpen);
+  });
+
+  emojiPanel.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    const emoji = btn.textContent;
+    const start = commentMessage.selectionStart ?? commentMessage.value.length;
+    const end = commentMessage.selectionEnd ?? commentMessage.value.length;
+    const val = commentMessage.value;
+    commentMessage.value = val.slice(0, start) + emoji + val.slice(end);
+    const newPos = start + emoji.length;
+    commentMessage.focus();
+    commentMessage.setSelectionRange(newPos, newPos);
+  });
+
+  document.addEventListener('click', (e) => {
+    if(emojiPanel.hidden) return;
+    if(e.target === emojiToggle || emojiPanel.contains(e.target)) return;
+    emojiPanel.hidden = true;
+    emojiToggle.classList.remove('active');
+  });
+
+  // ---------- INDIKATOR SEDANG MENGETIK (Supabase Realtime Broadcast) ----------
+  // status ini cuma sinyal sekilas antar-browser, tidak disimpan ke database
+  const typingChannel = supabaseClient.channel('typing-status');
+  let hideTypingTimeout = null;
+  let lastTypingSentAt = 0;
+
+  typingChannel
+    .on('broadcast', { event: 'typing' }, ({ payload }) => {
+      typingName.textContent = payload?.name || 'Seseorang';
+      typingIndicator.hidden = false;
+      clearTimeout(hideTypingTimeout);
+      hideTypingTimeout = setTimeout(() => { typingIndicator.hidden = true; }, 2200);
+    })
+    .subscribe();
+
+  commentMessage.addEventListener('input', () => {
+    const now = Date.now();
+    if(now - lastTypingSentAt < 1200) return;
+    lastTypingSentAt = now;
+    typingChannel.send({
+      type: 'broadcast',
+      event: 'typing',
+      payload: { name: commentName.value.trim() || 'Peafowl' }
+    });
+  });
 
   function openComments(){
     commentsOverlay.classList.add('show');
@@ -764,6 +918,10 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
   }
   function closeComments(){
     commentsOverlay.classList.remove('show');
+    emojiPanel.hidden = true;
+    emojiToggle.classList.remove('active');
+    typingIndicator.hidden = true;
+    clearTimeout(hideTypingTimeout);
   }
 
   commentsTrigger.addEventListener('click', openComments);
@@ -846,13 +1004,13 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
       .limit(50);
 
     if(error){
-      commentsEmpty.textContent = 'Connection field.';
+      commentsEmpty.textContent = 'Failed load message. check the connection.';
       console.error(error);
       return;
     }
 
     if(!data || data.length === 0){
-      commentsEmpty.textContent = 'belum ada balasan. jadilah yang pertama 💌';
+      commentsEmpty.textContent = 'Sent your letter here. be the first person here 💌';
       return;
     }
 
@@ -896,7 +1054,7 @@ And drink lot water ( ˶˘ ³˘) I wish in my pray you can go through everything
       .single();
 
     if(error){
-      commentStatus.textContent = 'failed sending letter.';
+      commentStatus.textContent = 'gagal mengirim, coba lagi ya.';
       console.error(error);
       commentSubmit.disabled = false;
       return;
