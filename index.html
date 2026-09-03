@@ -256,6 +256,97 @@
     opacity: 0.75;
   }
 
+  /* ---------- REPLY (tahan/hold bubble buat membalas) ---------- */
+  .comment-bubble{
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: transform 0.15s ease;
+  }
+  .comment-bubble.pressing{ transform: scale(0.96); }
+  .comment-bubble.reply-flash{ animation: reply-flash 0.4s ease; }
+  @keyframes reply-flash{
+    0%{ box-shadow: 0 0 0 0 rgba(217,90,125,0.5); }
+    100%{ box-shadow: 0 0 0 12px rgba(217,90,125,0); }
+  }
+  .comment-bubble.admin.reply-flash{ animation: reply-flash-admin 0.4s ease; }
+  @keyframes reply-flash-admin{
+    0%{ box-shadow: 0 0 0 0 rgba(75,125,224,0.5); }
+    100%{ box-shadow: 0 0 0 12px rgba(75,125,224,0); }
+  }
+
+  .reply-quote{
+    border-left: 3px solid var(--wax);
+    background: rgba(217,90,125,0.08);
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 5px;
+  }
+  .comment-bubble.admin .reply-quote{
+    border-left-color: #fff;
+    background: rgba(255,255,255,0.18);
+  }
+  .reply-quote-name{
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--wax);
+    margin: 0;
+  }
+  .comment-bubble.admin .reply-quote-name{ color: #fff; }
+  .reply-quote-text{
+    font-size: 0.72rem;
+    color: #8a5566;
+    margin: 1px 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+  }
+  .comment-bubble.admin .reply-quote-text{ color: rgba(255,255,255,0.85); }
+
+  .reply-banner{
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 18px 8px;
+    padding: 6px 10px;
+    background: rgba(217,90,125,0.08);
+    border-left: 3px solid var(--wax);
+    border-radius: 8px;
+  }
+  .reply-banner[hidden]{ display: none; }
+  .reply-banner-text{ flex: 1; min-width: 0; }
+  .reply-banner-name{
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--wax);
+    margin: 0;
+  }
+  .reply-banner-message{
+    font-size: 0.72rem;
+    color: #8a5566;
+    margin: 1px 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .reply-banner-close{
+    flex: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: rgba(217,90,125,0.15);
+    color: #c9587c;
+    font-size: 0.7rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  body.mode-malam .reply-banner{ background: rgba(255,255,255,0.1); }
+  body.mode-malam .reply-banner-name{ color: #ffc9db; }
+  body.mode-malam .reply-banner-message{ color: #f2c6d4; }
+
   /* ---------- INDIKATOR SEDANG MENGETIK ---------- */
   .typing-indicator{
     flex: none;
@@ -446,6 +537,14 @@
       <span id="typingName"></span> sedang mengetik<span class="typing-dots"><span></span><span></span><span></span></span>
     </p>
 
+    <div class="reply-banner" id="replyBanner" hidden>
+      <div class="reply-banner-text">
+        <p class="reply-banner-name" id="replyBannerName"></p>
+        <p class="reply-banner-message" id="replyBannerMessage"></p>
+      </div>
+      <button type="button" class="reply-banner-close" id="replyBannerClose" aria-label="Batal membalas">✕</button>
+    </div>
+
     <form class="comment-form" id="commentForm">
       <input type="text" id="commentName" class="name-field" placeholder="nama kamu" value="Peafowl" maxlength="40" autocomplete="off">
       <div class="message-row">
@@ -575,6 +674,74 @@
   const emojiPanel = document.getElementById('emojiPanel');
   const typingIndicator = document.getElementById('typingIndicator');
   const typingName = document.getElementById('typingName');
+  const replyBanner = document.getElementById('replyBanner');
+  const replyBannerName = document.getElementById('replyBannerName');
+  const replyBannerMessage = document.getElementById('replyBannerMessage');
+  const replyBannerClose = document.getElementById('replyBannerClose');
+
+  let replyTo = null; // { name, message }
+
+  function truncate(str, n){
+    return str.length > n ? str.slice(0, n - 1) + '…' : str;
+  }
+
+  function setReplyTo(name, message){
+    replyTo = { name, message: truncate(message, 120) };
+    replyBannerName.textContent = name;
+    replyBannerMessage.textContent = replyTo.message;
+    replyBanner.hidden = false;
+    commentMessage.focus();
+  }
+
+  function clearReplyTo(){
+    replyTo = null;
+    replyBanner.hidden = true;
+  }
+
+  replyBannerClose.addEventListener('mousedown', (e) => e.preventDefault());
+  replyBannerClose.addEventListener('click', clearReplyTo);
+
+  // tahan bubble chat sejenak buat membalasnya, gaya WhatsApp/Telegram
+  const HOLD_DURATION_MS = 450;
+  const MOVE_CANCEL_PX = 10;
+
+  function attachHoldToReply(bubbleEl, onHold){
+    let timer = null;
+    let startX = 0, startY = 0;
+    let moved = false;
+
+    function start(e){
+      moved = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      bubbleEl.classList.add('pressing');
+      timer = setTimeout(() => {
+        if(moved) return;
+        bubbleEl.classList.remove('pressing');
+        bubbleEl.classList.add('reply-flash');
+        setTimeout(() => bubbleEl.classList.remove('reply-flash'), 400);
+        if(navigator.vibrate) navigator.vibrate(12);
+        onHold();
+      }, HOLD_DURATION_MS);
+    }
+    function move(e){
+      if(Math.abs(e.clientX - startX) > MOVE_CANCEL_PX || Math.abs(e.clientY - startY) > MOVE_CANCEL_PX){
+        moved = true;
+        cancel();
+      }
+    }
+    function cancel(){
+      clearTimeout(timer);
+      bubbleEl.classList.remove('pressing');
+    }
+
+    bubbleEl.addEventListener('pointerdown', start);
+    bubbleEl.addEventListener('pointermove', move);
+    bubbleEl.addEventListener('pointerup', cancel);
+    bubbleEl.addEventListener('pointerleave', cancel);
+    bubbleEl.addEventListener('pointercancel', cancel);
+    bubbleEl.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
 
   const renderedIds = new Set();
   let lastSeenAt = null;
@@ -701,11 +868,21 @@
     item.innerHTML = `
       <p class="comment-name">${escapeHtml(displayName)}</p>
       <div class="comment-bubble${isAdmin ? ' admin' : ''}">
+        ${row.reply_name ? '<div class="reply-quote"><p class="reply-quote-name"></p><p class="reply-quote-text"></p></div>' : ''}
         <p class="comment-text"></p>
         <span class="comment-time">${formatSentTime(row.created_at)}</span>
       </div>
     `;
     item.querySelector('.comment-text').textContent = cleanMessage;
+
+    if(row.reply_name){
+      item.querySelector('.reply-quote-name').textContent = row.reply_name;
+      item.querySelector('.reply-quote-text').textContent = row.reply_message || '';
+    }
+
+    const bubbleEl = item.querySelector('.comment-bubble');
+    attachHoldToReply(bubbleEl, () => setReplyTo(displayName, cleanMessage));
+
     commentsList.appendChild(item);
     scrollToBottom();
   }
@@ -718,13 +895,13 @@
       .limit(50);
 
     if(error){
-      commentsEmpty.textContent = 'belum bisa memuat balasan. cek pengaturan Supabase kamu.';
+      commentsEmpty.textContent = 'Check Internet Connection. Try Again';
       console.error(error);
       return;
     }
 
     if(!data || data.length === 0){
-      commentsEmpty.textContent = 'belum ada balasan. jadilah yang pertama 💌';
+      commentsEmpty.textContent = 'Be first here. Peafowl and Ananda 💌';
       return;
     }
 
@@ -764,12 +941,17 @@
 
     const { data, error } = await supabaseClient
       .from('comments')
-      .insert({ name, message })
+      .insert({
+        name,
+        message,
+        reply_name: replyTo?.name ?? null,
+        reply_message: replyTo?.message ?? null
+      })
       .select()
       .single();
 
     if(error){
-      commentStatus.textContent = 'gagal mengirim, coba lagi ya.';
+      commentStatus.textContent = 'failed sending message, try again ya.';
       console.error(error);
       commentSubmit.disabled = false;
       return;
@@ -779,6 +961,7 @@
     commentMessage.value = '';
     commentStatus.textContent = '';
     commentSubmit.disabled = false;
+    clearReplyTo();
     commentMessage.focus();
   });
 
