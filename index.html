@@ -5,6 +5,88 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>For Beautiful Peafowl</title>
 <style>
+  /* ---------- PIN GATE ---------- */
+  .pin-gate{
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #fff5f8 0%, #ffd0dd 45%, #ffb3cb 100%);
+    transition: opacity 0.5s ease;
+  }
+  .pin-gate.hidden{
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .pin-card{
+    text-align: center;
+    padding: 28px 26px;
+    max-width: 320px;
+    width: 100%;
+  }
+  .pin-card.shake{ animation: pin-shake 0.4s ease; }
+  @keyframes pin-shake{
+    0%, 100%{ transform: translateX(0); }
+    20%, 60%{ transform: translateX(-8px); }
+    40%, 80%{ transform: translateX(8px); }
+  }
+
+  .pin-icon{ font-size: 2rem; margin-bottom: 8px; }
+  .pin-title{
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    font-size: 1.3rem;
+    margin: 0 0 6px;
+    color: var(--ink);
+  }
+  .pin-subtitle{
+    font-size: 0.8rem;
+    opacity: 0.8;
+    margin: 0 0 22px;
+  }
+  .pin-input{
+    width: 100%;
+    text-align: center;
+    letter-spacing: 0.6em;
+    font-size: 1.3rem;
+    padding: 12px 12px 12px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(217,90,125,0.3);
+    outline: none;
+    margin-bottom: 14px;
+    font-family: 'Trebuchet MS', monospace;
+    background: #fff;
+    color: var(--ink);
+  }
+  .pin-input:focus{
+    border-color: var(--wax);
+    box-shadow: 0 0 0 3px rgba(217,90,125,0.15);
+  }
+  .pin-submit{
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    padding: 12px 30px;
+    border-radius: 999px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: linear-gradient(160deg, var(--wax-light), var(--wax));
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(217,90,125,0.35);
+    transition: transform 0.15s ease, opacity 0.2s ease;
+  }
+  .pin-submit:hover{ transform: translateY(-2px); }
+  .pin-submit:disabled{ opacity: 0.6; cursor: default; transform: none; }
+  .pin-status{
+    font-size: 0.78rem;
+    color: #c9587c;
+    min-height: 18px;
+    margin-top: 12px;
+  }
+
   :root{
     --ink: #4b2b3a;
     --wax: #d95a7d;
@@ -388,19 +470,6 @@
   }
   body.mode-malam .comment-form{ border-color: rgba(255,255,255,0.15); background: rgba(0,0,0,0.15); }
 
-  .name-field{
-    border: none;
-    background: transparent;
-    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
-    font-size: 0.68rem;
-    color: #c9587c;
-    padding: 0 4px;
-    outline: none;
-    width: fit-content;
-    max-width: 60%;
-  }
-  .name-field::placeholder{ color: rgba(201,88,124,0.4); }
-
   .message-row{
     position: relative;
     display: flex;
@@ -509,6 +578,17 @@
 </head>
 <body>
 
+  <div class="pin-gate" id="pinGate">
+    <form class="pin-card" id="pinForm">
+      <div class="pin-icon">🔒</div>
+      <h1 class="pin-title">Enter Pin</h1>
+      <p class="pin-subtitle">Private Chat</p>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" class="pin-input" id="pinInput" placeholder="••••••" autocomplete="off" required>
+      <button type="submit" class="pin-submit" id="pinSubmit">Log In</button>
+      <p class="pin-status" id="pinStatus"></p>
+    </form>
+  </div>
+
   <div class="mode-bg bg-pagi" id="bg-pagi"><div class="sun"></div></div>
   <div class="mode-bg bg-siang" id="bg-siang"><div class="sun"></div></div>
   <div class="mode-bg bg-sore" id="bg-sore"><div class="sun"></div></div>
@@ -534,7 +614,7 @@
     </div>
 
     <p class="typing-indicator" id="typingIndicator" hidden>
-      <span id="typingName"></span> typing<span class="typing-dots"><span></span><span></span><span></span></span>
+      <span id="typingName"></span> sedang mengetik<span class="typing-dots"><span></span><span></span><span></span></span>
     </p>
 
     <div class="reply-banner" id="replyBanner" hidden>
@@ -546,7 +626,6 @@
     </div>
 
     <form class="comment-form" id="commentForm">
-      <input type="text" id="commentName" class="name-field" placeholder="nama kamu" value="Peafowl" maxlength="40" autocomplete="off">
       <div class="message-row">
         <button type="button" class="emoji-toggle" id="emojiToggle" aria-label="Pilih emoji">☺</button>
         <input type="text" id="commentMessage" class="message-field" placeholder="reply here" maxlength="300" required autocomplete="off">
@@ -566,6 +645,81 @@
   // ================================================================================
 
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* ================= PIN GATE ================= */
+  const pinGate = document.getElementById('pinGate');
+  const pinForm = document.getElementById('pinForm');
+  const pinInput = document.getElementById('pinInput');
+  const pinStatus = document.getElementById('pinStatus');
+  const pinCard = document.getElementById('pinForm');
+  const pinSubmit = document.getElementById('pinSubmit');
+
+  let USER_IDENTITY = sessionStorage.getItem('userIdentity'); // 'Ananda' | 'Peafowl' | null
+
+  function getDeviceToken(){
+    let token = sessionStorage.getItem('deviceToken');
+    if(!token){
+      token = (window.crypto?.randomUUID)
+        ? window.crypto.randomUUID()
+        : 'tok-' + Math.random().toString(36).slice(2) + Date.now();
+      sessionStorage.setItem('deviceToken', token);
+    }
+    return token;
+  }
+  const deviceToken = getDeviceToken();
+
+  if(USER_IDENTITY){
+    pinGate.classList.add('hidden');
+  }
+
+  function unlockApp(identity){
+    USER_IDENTITY = identity;
+    sessionStorage.setItem('userIdentity', identity);
+    pinGate.classList.add('hidden');
+  }
+
+  pinForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pin = pinInput.value.trim();
+    if(pin.length !== 6){
+      pinStatus.textContent = 'PIN harus 6 digit.';
+      return;
+    }
+
+    pinSubmit.disabled = true;
+    pinStatus.textContent = 'checking...';
+
+    const { data, error } = await supabaseClient.rpc('verify_pin', {
+      input_pin: pin,
+      client_token: deviceToken
+    });
+
+    pinSubmit.disabled = false;
+
+    if(error){
+      pinStatus.textContent = 'Pin wrong, try again.';
+      console.error(error);
+      return;
+    }
+
+    if(data.status === 'ok'){
+      unlockApp(data.identity);
+      return;
+    }
+
+    if(data.status === 'locked'){
+      const mins = Math.max(1, Math.ceil((new Date(data.locked_until) - Date.now()) / 60000));
+      pinStatus.textContent = `Terlalu banyak percobaan salah. Coba lagi dalam ${mins} menit.`;
+    } else {
+      pinStatus.textContent = `PIN salah. Sisa percobaan: ${data.attempts_left}.`;
+    }
+
+    pinInput.value = '';
+    pinInput.focus();
+    pinCard.classList.remove('shake');
+    void pinCard.offsetWidth; // reflow biar animasi shake bisa retrigger
+    pinCard.classList.add('shake');
+  });
 
   /* ================= MODE WAKTU (dipakai bersama Halaman Depan & Chat) ================= */
   const bgEls = {
@@ -665,7 +819,6 @@
   const commentsEmpty = document.getElementById('commentsEmpty');
 
   const commentForm = document.getElementById('commentForm');
-  const commentName = document.getElementById('commentName');
   const commentMessage = document.getElementById('commentMessage');
   const hpField = document.getElementById('hpField');
   const commentSubmit = document.getElementById('commentSubmit');
@@ -745,7 +898,6 @@
 
   const renderedIds = new Set();
   let lastSeenAt = null;
-  const ADMIN_TRIGGER = /^\*admin\s*/i;
 
   // ---------- EMOJI PICKER ----------
   const EMOJI_LIST = ['🍥','❤️','💕','💖','💗','💘','💌','🥰','😍','😘','🤗','☺️','😊','😂','🙈','😢','😅','✨','🌟','🌸','🌷','☁️','🌙','👉👈','💫'];
@@ -810,13 +962,12 @@
   commentMessage.addEventListener('input', () => {
     clearTimeout(typingDebounceTimer);
     typingDebounceTimer = setTimeout(() => {
-      const isAdminTyping = ADMIN_TRIGGER.test(commentMessage.value);
       typingChannel.send({
         type: 'broadcast',
         event: 'typing',
         payload: {
-          name: isAdminTyping ? 'Ananda' : (commentName.value.trim() || 'Peafowl'),
-          admin: isAdminTyping
+          name: USER_IDENTITY,
+          admin: USER_IDENTITY === 'Ananda'
         }
       });
     }, TYPING_DEBOUNCE_MS);
@@ -858,10 +1009,9 @@
     }
     commentsEmpty.remove?.();
 
-    const rawMessage = row.message || '';
-    const isAdmin = ADMIN_TRIGGER.test(rawMessage);
-    const cleanMessage = isAdmin ? rawMessage.replace(ADMIN_TRIGGER, '') : rawMessage;
-    const displayName = isAdmin ? 'Ananda' : row.name;
+    const cleanMessage = row.message || '';
+    const isAdmin = row.name === 'Ananda';
+    const displayName = row.name;
 
     const item = document.createElement('div');
     item.className = 'bubble-row' + (isAdmin ? ' admin' : '');
@@ -927,8 +1077,9 @@
   commentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if(hpField.value){ return; }
+    if(!USER_IDENTITY){ return; } // jaga-jaga kalau somehow belum verifikasi PIN
 
-    const name = commentName.value.trim() || 'Peafowl';
+    const name = USER_IDENTITY;
     const message = commentMessage.value.trim();
     if(!message) return;
 
