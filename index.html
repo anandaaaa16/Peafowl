@@ -704,11 +704,6 @@
   }
   const deviceToken = getDeviceToken();
 
-  if(USER_IDENTITY){
-    pinGate.classList.add('hidden');
-    startPresence();
-  }
-
   function unlockApp(identity){
     USER_IDENTITY = identity;
     sessionStorage.setItem('userIdentity', identity);
@@ -753,6 +748,13 @@
           await presenceChannel.track({ identity: USER_IDENTITY });
         }
       });
+  }
+
+  // baru dipanggil di sini, SETELAH presenceStarted siap -- ini yang
+  // kemarin ke-skip pas reload dan bikin seluruh skrip berhenti total
+  if(USER_IDENTITY){
+    pinGate.classList.add('hidden');
+    startPresence();
   }
 
   pinForm.addEventListener('submit', async (e) => {
