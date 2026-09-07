@@ -877,18 +877,29 @@
   welcomeCta.addEventListener('click', () => {
     viewWelcome.classList.remove('is-active');
     viewChat.classList.add('is-active');
+    sessionStorage.setItem('currentView', 'chat');
     syncMissed();
     scrollToBottom();
   });
   backBtn.addEventListener('click', () => {
     viewChat.classList.remove('is-active');
     viewWelcome.classList.add('is-active');
+    sessionStorage.setItem('currentView', 'welcome');
 
     // jaga-jaga kalau lagi ngetik terus pindah halaman, kasih tahu lawan
     // bicara biar indikatornya gak nyangkut kelamaan
     clearTimeout(typingDebounceTimer);
     typingChannel.send({ type: 'broadcast', event: 'typing', payload: { stopped: true } });
   });
+
+  // begitu reload, kalau identitas masih diinget DAN sebelumnya lagi di
+  // Chat, langsung balik ke Chat lagi -- gak direset ke Halaman Depan
+  if(USER_IDENTITY && sessionStorage.getItem('currentView') === 'chat'){
+    viewWelcome.classList.remove('is-active');
+    viewChat.classList.add('is-active');
+    syncMissed();
+    scrollToBottom();
+  }
 
   /* ================= CHAT / KOMENTAR ================= */
   const commentsListWrap = document.getElementById('commentsList');
