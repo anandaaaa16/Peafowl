@@ -759,12 +759,12 @@
     e.preventDefault();
     const pin = pinInput.value.trim();
     if(pin.length !== 6){
-      pinStatus.textContent = 'PIN must 6 digits.';
+      pinStatus.textContent = 'PIN harus 6 digit.';
       return;
     }
 
     pinSubmit.disabled = true;
-    pinStatus.textContent = 'Checking...';
+    pinStatus.textContent = 'memeriksa...';
 
     const { data, error } = await supabaseClient.rpc('verify_pin', {
       input_pin: pin,
