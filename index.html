@@ -399,6 +399,7 @@
     border-radius: 8px;
   }
   .reply-banner[hidden]{ display: none; }
+
   .reply-banner-text{ flex: 1; min-width: 0; }
   .reply-banner-name{
     font-size: 0.68rem;
@@ -463,12 +464,43 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 10px 18px calc(14px + env(safe-area-inset-bottom));
+    padding: 18px 18px calc(14px + env(safe-area-inset-bottom));
     border-top: 1px solid rgba(217,90,125,0.15);
     background: rgba(255,255,255,0.5);
     transition: border-color 0.8s ease, background 0.8s ease;
   }
   body.mode-malam .comment-form{ border-color: rgba(255,255,255,0.15); background: rgba(0,0,0,0.15); }
+
+  /* ---------- STATUS ONLINE ---------- */
+  .presence-status{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.72rem;
+    color: #a85c76;
+    margin-bottom: 4px;
+  }
+  body.mode-malam .presence-status{ color: #f2c6d4; }
+
+  .presence-dot{
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #c9748f;
+    opacity: 0.55;
+    flex: none;
+  }
+  .presence-dot.both{
+    background: #4caf50;
+    opacity: 1;
+    animation: presence-blink 1.8s ease-in-out infinite;
+  }
+  @keyframes presence-blink{
+    0%, 100%{ opacity: 1; box-shadow: 0 0 0 0 rgba(76,175,80,0.5); }
+    50%{ opacity: 0.55; box-shadow: 0 0 0 4px rgba(76,175,80,0); }
+  }
 
   .message-row{
     position: relative;
@@ -626,6 +658,10 @@
     </div>
 
     <form class="comment-form" id="commentForm">
+      <div class="presence-status" id="presenceStatus">
+        <span class="presence-dot" id="presenceDot"></span>
+        <span id="presenceText">Connecting...</span>
+      </div>
       <div class="message-row">
         <button type="button" class="emoji-toggle" id="emojiToggle" aria-label="Pilih emoji">☺</button>
         <input type="text" id="commentMessage" class="message-field" placeholder="reply here" maxlength="300" required autocomplete="off">
@@ -670,24 +706,65 @@
 
   if(USER_IDENTITY){
     pinGate.classList.add('hidden');
+    startPresence();
   }
 
   function unlockApp(identity){
     USER_IDENTITY = identity;
     sessionStorage.setItem('userIdentity', identity);
     pinGate.classList.add('hidden');
+    startPresence();
+  }
+
+  /* ================= STATUS ONLINE (Supabase Realtime Presence) ================= */
+  const presenceDot = document.getElementById('presenceDot');
+  const presenceText = document.getElementById('presenceText');
+  let presenceStarted = false;
+
+  function updatePresenceUI(state){
+    const identities = new Set();
+    Object.values(state).forEach(entries => {
+      entries.forEach(entry => { if(entry.identity) identities.add(entry.identity); });
+    });
+
+    const otherIdentity = USER_IDENTITY === 'Ananda' ? 'Peafowl' : 'Ananda';
+
+    if(identities.has('Ananda') && identities.has('Peafowl')){
+      presenceText.textContent = 'Both of you online';
+      presenceDot.className = 'presence-dot both';
+    } else {
+      presenceText.textContent = otherIdentity + ' Offline';
+      presenceDot.className = 'presence-dot';
+    }
+  }
+
+  function startPresence(){
+    if(presenceStarted || !USER_IDENTITY) return;
+    presenceStarted = true;
+
+    const presenceChannel = supabaseClient.channel('presence-status');
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        updatePresenceUI(presenceChannel.presenceState());
+      })
+      .subscribe(async (status) => {
+        if(status === 'SUBSCRIBED'){
+          await presenceChannel.track({ identity: USER_IDENTITY });
+        }
+      });
   }
 
   pinForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const pin = pinInput.value.trim();
     if(pin.length !== 6){
-      pinStatus.textContent = 'PIN must 6 digit.';
+      pinStatus.textContent = 'PIN must 6 digits.';
       return;
     }
 
     pinSubmit.disabled = true;
-    pinStatus.textContent = 'checking...';
+    pinStatus.textContent = 'Checking...';
 
     const { data, error } = await supabaseClient.rpc('verify_pin', {
       input_pin: pin,
