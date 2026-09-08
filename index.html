@@ -826,12 +826,12 @@
     e.preventDefault();
     const pin = pinInput.value.trim();
     if(pin.length !== 6){
-      pinStatus.textContent = 'PIN harus 6 digit.';
+      pinStatus.textContent = 'PIN must 6 digits.';
       return;
     }
 
     pinSubmit.disabled = true;
-    pinStatus.textContent = 'checking...';
+    pinStatus.textContent = 'Checking...';
 
     const { data, error } = await supabaseClient.rpc('verify_pin', {
       input_pin: pin,
@@ -1085,14 +1085,18 @@
 
   // ---------- STICKER PICKER ----------
   const STICKER_FILES = [
-    'Peafowl_1.png','Peafowl_2.png','Peafowl_3.png','Peafowl_4.png','Peafowl_5.png',
-    'Peafowl_6.png','Peafowl_7.png','Peafowl_8.png','Peafowl_9.png'
+    'Peafowl 1.png','Peafowl 2.png','Peafowl 3.png','Peafowl 4.png','Peafowl 5.png',
+    'Peafowl 6.png','Peafowl 7.png','Peafowl 8.png','Peafowl 9.png'
   ];
   const STICKER_BASE_URL = SUPABASE_URL + '/storage/v1/object/public/stickers/';
 
-  stickerToggleIcon.src = STICKER_BASE_URL + STICKER_FILES[0];
+  function stickerUrl(file){
+    return STICKER_BASE_URL + encodeURIComponent(file);
+  }
+
+  stickerToggleIcon.src = stickerUrl(STICKER_FILES[0]);
   stickerPanel.innerHTML = STICKER_FILES.map(file =>
-    `<button type="button" data-file="${file}"><img src="${STICKER_BASE_URL}${file}" alt="stiker" loading="lazy"></button>`
+    `<button type="button" data-file="${escapeHtml(file)}"><img src="${stickerUrl(file)}" alt="stiker" loading="lazy"></button>`
   ).join('');
 
   stickerToggle.addEventListener('mousedown', (e) => e.preventDefault());
@@ -1234,7 +1238,7 @@
         <p class="comment-name">${escapeHtml(displayName)}</p>
         <div class="sticker-bubble">
           ${row.reply_name ? '<div class="reply-quote"><p class="reply-quote-name"></p><p class="reply-quote-text"></p></div>' : ''}
-          <img src="${STICKER_BASE_URL}${escapeHtml(row.sticker)}" alt="stiker" loading="lazy">
+          <img src="${stickerUrl(row.sticker)}" alt="stiker" loading="lazy">
           <span class="sticker-time">${formatSentTime(row.created_at)}</span>
         </div>
       `;
