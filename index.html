@@ -1218,13 +1218,13 @@
     requestAnimationFrame(() => {
       commentsListWrap.scrollTop = commentsListWrap.scrollHeight;
     });
-  }
+    }
 
   function formatSentTime(dateStr){
     const d = new Date(dateStr);
     const now = new Date();
     const sameDay = d.toDateString() === now.toDateString();
-    const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     if(sameDay) return timePart;
     const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
     return datePart + ', ' + timePart;
