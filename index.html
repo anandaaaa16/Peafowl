@@ -228,6 +228,191 @@
   body.mode-malam .welcome-subtitle{ color: #fff0f4; }
   body.mode-malam .welcome-cta{ background: linear-gradient(160deg, #ffb3c9, #ff8fb0); color: #5c2740; }
 
+  /* ---------- SEND LETTER (khusus Ananda) ---------- */
+  .letter-send-btn{
+    display: block;
+    margin: 12px auto 0;
+    border: 1px solid rgba(217,90,125,0.4);
+    background: transparent;
+    color: var(--wax);
+    cursor: pointer;
+    padding: 10px 26px;
+    border-radius: 999px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .letter-send-btn:hover{ background: rgba(217,90,125,0.08); transform: translateY(-2px); }
+  .letter-send-btn[hidden]{ display: none; }
+  body.mode-malam .letter-send-btn{ color: #ffd6e2; border-color: rgba(255,255,255,0.4); }
+
+  .letter-compose-overlay,
+  .letter-read-overlay{
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(90,40,60,0.45);
+    padding: 20px;
+  }
+  .letter-compose-overlay[hidden],
+  .letter-read-overlay[hidden]{ display: none; }
+
+  .letter-compose-card,
+  .letter-read-card{
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    max-height: 85vh;
+    overflow-y: auto;
+    background: linear-gradient(170deg, #fffaf6, #fdf0e8);
+    border-radius: 16px;
+    padding: 30px 24px 24px;
+    box-shadow: 0 20px 50px rgba(90,40,60,0.35);
+    text-align: center;
+    animation: letter-pop 0.35s ease;
+  }
+  @keyframes letter-pop{
+    0%{ opacity: 0; transform: scale(0.9); }
+    100%{ opacity: 1; transform: scale(1); }
+  }
+
+  .letter-close-btn{
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: rgba(217,90,125,0.12);
+    color: #c9587c;
+    font-size: 0.85rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .letter-compose-title{
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    font-size: 1.15rem;
+    color: var(--ink);
+    margin: 0 0 14px;
+  }
+  .letter-compose-textarea{
+    width: 100%;
+    min-height: 140px;
+    resize: vertical;
+    border: 1px solid rgba(217,90,125,0.25);
+    border-radius: 10px;
+    padding: 12px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.88rem;
+    color: var(--ink);
+    outline: none;
+    margin-bottom: 12px;
+  }
+  .letter-compose-textarea:focus{ border-color: var(--wax); box-shadow: 0 0 0 3px rgba(217,90,125,0.15); }
+
+  .letter-send-to-btn{
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    padding: 11px 20px;
+    border-radius: 999px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    background: linear-gradient(160deg, var(--wax-light), var(--wax));
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(217,90,125,0.3);
+  }
+  .letter-send-to-btn:disabled{ opacity: 0.6; cursor: default; }
+  .letter-compose-status{
+    font-size: 0.75rem;
+    color: #c9748f;
+    min-height: 16px;
+    margin: 8px 0 0;
+  }
+
+  .letter-read-seal{ font-size: 2rem; margin-bottom: 8px; }
+  .letter-read-heading{
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    font-size: 1.2rem;
+    color: var(--ink);
+    margin: 0 0 14px;
+  }
+  .letter-read-body{
+    font-size: 0.92rem;
+    line-height: 1.7;
+    color: var(--ink);
+    white-space: pre-line;
+    text-align: left;
+    margin: 0 0 14px;
+  }
+  .letter-read-time{
+    font-size: 0.7rem;
+    color: #c9748f;
+    margin: 0;
+  }
+
+  .letter-toast{
+    position: fixed;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    z-index: 70;
+    background: linear-gradient(160deg, var(--wax-light), var(--wax));
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    box-shadow: 0 10px 24px rgba(217,90,125,0.4);
+    animation: letter-toast-in 0.3s ease, letter-toast-out 0.3s ease 2s forwards;
+  }
+  .letter-toast[hidden]{ display: none; }
+  @keyframes letter-toast-in{
+    0%{ opacity: 0; transform: translateX(-50%) translateY(10px); }
+    100%{ opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes letter-toast-out{
+    0%{ opacity: 1; } 100%{ opacity: 0; }
+  }
+
+  /* ---------- KARTU SURAT DI CHAT ---------- */
+  .letter-card{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(160deg, #fffaf6, #fdf0e8);
+    border: 1px solid rgba(217,90,125,0.25);
+    border-radius: 14px;
+    padding: 12px 16px;
+    max-width: 220px;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(217,90,125,0.15);
+    transition: transform 0.15s ease;
+  }
+  .letter-card:hover{ transform: translateY(-2px); }
+  .letter-card-icon{ font-size: 1.6rem; flex: none; }
+  .letter-card-text{ text-align: left; }
+  .letter-card-from{
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    font-size: 0.85rem;
+    color: var(--ink);
+    margin: 0;
+  }
+  .letter-card-hint{
+    font-size: 0.65rem;
+    color: #c9748f;
+    margin: 2px 0 0;
+  }
+  .letter-card.opened{ opacity: 0.75; }
+  .letter-card.opened .letter-card-icon{ filter: grayscale(0.3); }
+
   /* ---------- CHAT ---------- */
   .view-chat{
     display: flex;
@@ -712,8 +897,34 @@
       <h1 class="welcome-greeting" id="welcomeGreeting">Good Morning, Peafowl</h1>
       <p class="welcome-subtitle" id="welcomeSubtitle">I hope you doing great today! ☁️</p>
       <button type="button" class="welcome-cta" id="welcomeCta">Start Chat ♥</button>
+      <button type="button" class="letter-send-btn" id="letterSendBtn" hidden>Send Letter ✉️</button>
     </div>
   </div>
+
+  <!-- popup nulis surat, khusus Ananda -->
+  <div class="letter-compose-overlay" id="letterComposeOverlay" hidden>
+    <div class="letter-compose-card">
+      <button type="button" class="letter-close-btn" id="letterComposeClose" aria-label="Tutup">✕</button>
+      <p class="letter-compose-title">Write a letter for Peafowl</p>
+      <textarea class="letter-compose-textarea" id="letterComposeText" placeholder="Dear Peafowl..." maxlength="1000"></textarea>
+      <button type="button" class="letter-send-to-btn" id="letterSendToBtn">Send to Peafowl</button>
+      <p class="letter-compose-status" id="letterComposeStatus"></p>
+    </div>
+  </div>
+
+  <!-- popup baca surat -- HANYA bisa ditutup lewat tombol X, klik luar area gak nutup -->
+  <div class="letter-read-overlay" id="letterReadOverlay" hidden>
+    <div class="letter-read-card">
+      <button type="button" class="letter-close-btn" id="letterReadClose" aria-label="Tutup">✕</button>
+      <div class="letter-read-seal">💌</div>
+      <p class="letter-read-heading">From Ibu</p>
+      <p class="letter-read-body" id="letterReadBody"></p>
+      <p class="letter-read-time" id="letterReadTime"></p>
+    </div>
+  </div>
+
+  <!-- notif kecil "Send Success" -->
+  <div class="letter-toast" id="letterToast" hidden>Send Success ✉️</div>
 
   <div class="view view-chat" id="viewChat">
     <div class="chat-header">
@@ -746,7 +957,7 @@
       <div class="message-row">
         <button type="button" class="emoji-toggle" id="emojiToggle" aria-label="Pilih emoji">☺</button>
         <button type="button" class="sticker-toggle" id="stickerToggle" aria-label="Pilih stiker"><img src="" alt="" id="stickerToggleIcon"></button>
-        <input type="text" id="commentMessage" class="message-field" placeholder="reply here" maxlength="300" required autocomplete="off">
+        <input type="text" id="commentMessage" class="message-field" placeholder="reply here" required autocomplete="off">
         <input type="text" class="hp-field" id="hpField" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button type="submit" class="comment-send" id="commentSubmit" aria-label="Kirim balasan">♥</button>
         <div class="emoji-panel" id="emojiPanel" hidden></div>
@@ -787,10 +998,17 @@
   }
   const deviceToken = getDeviceToken();
 
+  const letterSendBtn = document.getElementById('letterSendBtn');
+
+  function updateLetterButtonVisibility(){
+    letterSendBtn.hidden = (USER_IDENTITY !== 'Ananda');
+  }
+
   function unlockApp(identity){
     USER_IDENTITY = identity;
     sessionStorage.setItem('userIdentity', identity);
     pinGate.classList.add('hidden');
+    updateLetterButtonVisibility();
     startPresence();
   }
 
@@ -837,6 +1055,7 @@
   // kemarin ke-skip pas reload dan bikin seluruh skrip berhenti total
   if(USER_IDENTITY){
     pinGate.classList.add('hidden');
+    updateLetterButtonVisibility();
     startPresence();
   }
 
@@ -913,7 +1132,7 @@
     }
   }
   bgEls.pagi.dataset.itemClass = 'petal';
-  scatter(bgEls.pagi, ['🌸','✿','💗'], 10, 9);
+  scatter(bgEls.pagi, ['🌸','🔅','💗'], 10, 9);
   bgEls.siang.dataset.itemClass = 'confetti';
   scatter(bgEls.siang, ['💗','💕','✨'], 12, 6.5);
   const cloud1 = document.createElement('div');
@@ -1171,6 +1390,112 @@
     stickerToggle.classList.remove('active');
   });
 
+  // ---------- LETTER (surat khusus dari Ananda) ----------
+  const letterComposeOverlay = document.getElementById('letterComposeOverlay');
+  const letterComposeClose = document.getElementById('letterComposeClose');
+  const letterComposeText = document.getElementById('letterComposeText');
+  const letterSendToBtn = document.getElementById('letterSendToBtn');
+  const letterComposeStatus = document.getElementById('letterComposeStatus');
+  const letterReadOverlay = document.getElementById('letterReadOverlay');
+  const letterReadClose = document.getElementById('letterReadClose');
+  const letterReadBody = document.getElementById('letterReadBody');
+  const letterReadTime = document.getElementById('letterReadTime');
+  const letterToast = document.getElementById('letterToast');
+
+  letterSendBtn.addEventListener('click', () => {
+    letterComposeText.value = ''; // selalu kosong tiap dibuka, gak nyimpen draft
+    letterComposeStatus.textContent = '';
+    letterComposeOverlay.hidden = false;
+    letterComposeText.focus();
+  });
+
+  letterComposeClose.addEventListener('click', () => {
+    letterComposeOverlay.hidden = true;
+  });
+
+  letterSendToBtn.addEventListener('click', async () => {
+    const text = letterComposeText.value.trim();
+    if(!text){
+      letterComposeStatus.textContent = 'Tulis dulu suratnya ya.';
+      return;
+    }
+    if(!USER_IDENTITY || USER_IDENTITY !== 'Ananda') return;
+
+    letterSendToBtn.disabled = true;
+    letterComposeStatus.textContent = 'Sending...';
+
+    const { data, error } = await supabaseClient
+      .from('comments')
+      .insert({
+        name: 'Ananda',
+        message: '',
+        letter_content: text,
+        letter_opened: false
+      })
+      .select()
+      .single();
+
+    letterSendToBtn.disabled = false;
+
+    if(error){
+      letterComposeStatus.textContent = 'Gagal mengirim, coba lagi ya.';
+      console.error(error);
+      return;
+    }
+
+    letterComposeOverlay.hidden = true;
+    letterComposeText.value = '';
+    renderComment(data);
+    showLetterToast();
+  });
+
+  function showLetterToast(){
+    letterToast.hidden = false;
+    // reset animasi biar bisa retrigger kalau dipanggil berkali-kali
+    letterToast.style.animation = 'none';
+    void letterToast.offsetWidth;
+    letterToast.style.animation = '';
+    setTimeout(() => { letterToast.hidden = true; }, 2400);
+  }
+
+  // buka popup baca surat -- SENGAJA gak ada handler klik backdrop,
+  // cuma bisa ditutup lewat tombol X
+  async function openLetter(row, cardEl){
+    letterReadBody.textContent = row.letter_content || '';
+    letterReadTime.textContent = formatSentTime(row.created_at);
+    letterReadOverlay.hidden = false;
+
+    // status "sudah dibaca" cuma di-update kalau yang buka itu Peafowl
+    // (bukan Ananda yang lagi ngecek suratnya sendiri)
+    if(!row.letter_opened && USER_IDENTITY === 'Peafowl'){
+      row.letter_opened = true;
+      if(cardEl) cardEl.classList.add('opened');
+      const { error } = await supabaseClient
+        .from('comments')
+        .update({ letter_opened: true })
+        .eq('id', row.id);
+      if(error) console.error(error);
+    }
+  }
+
+  letterReadClose.addEventListener('click', () => {
+    letterReadOverlay.hidden = true;
+  });
+
+  // event delegation: kartu surat dibikin dinamis oleh renderComment,
+  // jadi listener klik-nya ditaruh di container-nya
+  commentsList.addEventListener('click', (e) => {
+    const card = e.target.closest('.letter-card');
+    if(!card) return;
+    const row = {
+      id: card.dataset.id,
+      letter_content: card.dataset.letterContent,
+      letter_opened: card.classList.contains('opened'),
+      created_at: card.dataset.createdAt
+    };
+    openLetter(row, card);
+  });
+
   // ---------- INDIKATOR SEDANG MENGETIK (Supabase Realtime Broadcast) ----------
   const typingChannel = supabaseClient.channel('typing-status');
   let hideTypingTimeout = null;
@@ -1218,13 +1543,13 @@
     requestAnimationFrame(() => {
       commentsListWrap.scrollTop = commentsListWrap.scrollHeight;
     });
-    }
+  }
 
   function formatSentTime(dateStr){
     const d = new Date(dateStr);
     const now = new Date();
     const sameDay = d.toDateString() === now.toDateString();
-    const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     if(sameDay) return timePart;
     const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
     return datePart + ', ' + timePart;
@@ -1250,9 +1575,32 @@
     const isAdmin = row.name === 'Ananda';
     const displayName = row.name;
     const isSticker = !!row.sticker;
+    const isLetter = !!row.letter_content;
 
     const item = document.createElement('div');
     item.className = 'bubble-row' + (isAdmin ? ' admin' : '');
+    item.dataset.id = row.id;
+
+    if(isLetter){
+      const opened = !!row.letter_opened;
+      item.innerHTML = `
+        <div class="letter-card${opened ? ' opened' : ''}" data-id="${row.id}" data-created-at="${row.created_at}">
+          <span class="letter-card-icon">${opened ? '💌' : '✉️'}</span>
+          <div class="letter-card-text">
+            <p class="letter-card-from">From Ibu</p>
+            <p class="letter-card-hint">${opened ? 'Opened' : 'Tap to open'}</p>
+          </div>
+        </div>
+      `;
+      item.querySelector('.letter-card').dataset.letterContent = row.letter_content;
+      if(prepend){
+        loadOlderBtn.insertAdjacentElement('afterend', item);
+      } else {
+        commentsList.appendChild(item);
+        scrollToBottom();
+      }
+      return;
+    }
 
     if(isSticker){
       item.innerHTML = `
@@ -1429,6 +1777,17 @@
     .channel('comments-live')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
       renderComment(payload.new);
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'comments' }, (payload) => {
+      // sinkronisasi status "sudah dibaca" ke browser lain (misal Ananda
+      // liat kartu suratnya berubah begitu Peafowl buka, tanpa reload)
+      if(!payload.new?.letter_opened) return;
+      const cardEl = commentsList.querySelector(`.letter-card[data-id="${payload.new.id}"]`);
+      if(cardEl && !cardEl.classList.contains('opened')){
+        cardEl.classList.add('opened');
+        cardEl.querySelector('.letter-card-icon').textContent = '💌';
+        cardEl.querySelector('.letter-card-hint').textContent = 'Opened';
+      }
     })
     .subscribe();
 
