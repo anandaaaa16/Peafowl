@@ -338,6 +338,23 @@
     opacity: 0.75;
   }
 
+  .load-older-btn{
+    display: block;
+    margin: 4px auto 8px;
+    padding: 6px 16px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(217,90,125,0.1);
+    color: #c9587c;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: background 0.2s ease, opacity 0.2s ease;
+  }
+  .load-older-btn:hover{ background: rgba(217,90,125,0.18); }
+  .load-older-btn:disabled{ opacity: 0.5; cursor: default; }
+  .load-older-btn[hidden]{ display: none; }
+
   /* ---------- REPLY (tahan/hold bubble buat membalas) ---------- */
   .comment-bubble{
     cursor: pointer;
@@ -705,11 +722,12 @@
     </div>
 
     <div class="chat-area" id="commentsList">
+      <button type="button" class="load-older-btn" id="loadOlderBtn" hidden>Load older messages</button>
       <p class="comments-empty" id="commentsEmpty">Loading reply, please wait...</p>
     </div>
 
     <p class="typing-indicator" id="typingIndicator" hidden>
-      <span id="typingName"></span> typing<span class="typing-dots"><span></span><span></span><span></span></span>
+      <span id="typingName"></span> Typing<span class="typing-dots"><span></span><span></span><span></span></span>
     </p>
 
     <div class="reply-banner" id="replyBanner" hidden>
@@ -826,7 +844,7 @@
     e.preventDefault();
     const pin = pinInput.value.trim();
     if(pin.length !== 6){
-      pinStatus.textContent = 'PIN must 6 digits.';
+      pinStatus.textContent = 'PIN must 6 digit.';
       return;
     }
 
@@ -963,6 +981,7 @@
   const commentsListWrap = document.getElementById('commentsList');
   const commentsList = document.getElementById('commentsList');
   const commentsEmpty = document.getElementById('commentsEmpty');
+  const loadOlderBtn = document.getElementById('loadOlderBtn');
 
   const commentForm = document.getElementById('commentForm');
   const commentMessage = document.getElementById('commentMessage');
@@ -1205,7 +1224,7 @@
     const d = new Date(dateStr);
     const now = new Date();
     const sameDay = d.toDateString() === now.toDateString();
-    const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     if(sameDay) return timePart;
     const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
     return datePart + ', ' + timePart;
@@ -1217,12 +1236,12 @@
     return div.innerHTML;
   }
 
-  function renderComment(row){
+  function renderComment(row, prepend){
     if(row.id != null){
       if(renderedIds.has(row.id)) return;
       renderedIds.add(row.id);
     }
-    if(!lastSeenAt || new Date(row.created_at) > new Date(lastSeenAt)){
+    if(!prepend && (!lastSeenAt || new Date(row.created_at) > new Date(lastSeenAt))){
       lastSeenAt = row.created_at;
     }
     commentsEmpty.remove?.();
@@ -1248,8 +1267,12 @@
         item.querySelector('.reply-quote-name').textContent = row.reply_name;
         item.querySelector('.reply-quote-text').textContent = row.reply_message || '';
       }
-      commentsList.appendChild(item);
-      scrollToBottom();
+      if(prepend){
+        loadOlderBtn.insertAdjacentElement('afterend', item);
+      } else {
+        commentsList.appendChild(item);
+        scrollToBottom();
+      }
       return;
     }
 
@@ -1271,9 +1294,15 @@
     const bubbleEl = item.querySelector('.comment-bubble');
     attachHoldToReply(bubbleEl, () => setReplyTo(displayName, cleanMessage));
 
-    commentsList.appendChild(item);
-    scrollToBottom();
+    if(prepend){
+      loadOlderBtn.insertAdjacentElement('afterend', item);
+    } else {
+      commentsList.appendChild(item);
+      scrollToBottom();
+    }
   }
+
+  let oldestLoadedAt = null;
 
   async function loadComments(){
     const { data, error } = await supabaseClient
@@ -1294,10 +1323,52 @@
     }
 
     commentsList.innerHTML = '';
+    commentsList.appendChild(loadOlderBtn); // innerHTML='' ikut buang tombolnya, pasang lagi
     renderedIds.clear();
     data.reverse().forEach(row => renderComment(row));
+
+    oldestLoadedAt = data[0].created_at;
+    loadOlderBtn.hidden = (data.length < 50); // kurang dari 50 berarti udah abis semua riwayatnya
     scrollToBottom();
   }
+
+  async function loadOlderComments(){
+    if(!oldestLoadedAt) return;
+    loadOlderBtn.disabled = true;
+    loadOlderBtn.textContent = 'Loading...';
+
+    const scrollBefore = commentsListWrap.scrollHeight;
+
+    const { data, error } = await supabaseClient
+      .from('comments')
+      .select('*')
+      .lt('created_at', oldestLoadedAt)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    loadOlderBtn.disabled = false;
+    loadOlderBtn.textContent = 'Load older messages';
+
+    if(error || !data || data.length === 0){
+      loadOlderBtn.hidden = true;
+      return;
+    }
+
+    // JANGAN di-reverse: data dari query ini urutannya dari yang paling
+    // baru (dalam batch ini) ke paling lama. Karena tiap item ditempel
+    // "afterend" tombol (jadi selalu nyodok ke urutan paling atas), proses
+    // dalam urutan aslinya (turun) justru bikin hasil akhirnya kronologis
+    // dengan benar dari lama ke baru.
+    data.forEach(row => renderComment(row, true));
+
+    oldestLoadedAt = data[data.length - 1].created_at;
+    loadOlderBtn.hidden = (data.length < 30);
+
+    // jaga posisi scroll biar gak "loncat" pas pesan lama nyempil di atas
+    commentsListWrap.scrollTop = commentsListWrap.scrollHeight - scrollBefore;
+  }
+
+  loadOlderBtn.addEventListener('click', loadOlderComments);
 
   async function syncMissed(){
     if(!lastSeenAt) return;
