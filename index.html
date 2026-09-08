@@ -529,6 +529,69 @@
   .emoji-toggle:hover{ background: rgba(224,128,152,0.22); }
   .emoji-toggle.active{ background: var(--wax); color: #fff; transform: scale(1.05); }
 
+  .sticker-toggle{
+    flex: none;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: rgba(224,128,152,0.12);
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease;
+    padding: 0;
+  }
+  .sticker-toggle img{ width: 18px; height: 18px; object-fit: contain; }
+  .sticker-toggle:hover{ background: rgba(224,128,152,0.22); }
+  .sticker-toggle.active{ background: var(--wax); transform: scale(1.05); }
+
+  .sticker-panel{
+    position: absolute;
+    left: 40px;
+    bottom: 48px;
+    width: 236px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(217,90,125,0.25);
+    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    z-index: 20;
+  }
+  .sticker-panel[hidden]{ display: none; }
+  .sticker-panel button{
+    border: none;
+    background: transparent;
+    padding: 4px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .sticker-panel button:hover{ background: rgba(224,128,152,0.15); transform: scale(1.06); }
+  .sticker-panel button img{ width: 100%; aspect-ratio: 1; object-fit: contain; display: block; }
+
+  .sticker-bubble{
+    width: 130px;
+  }
+  .sticker-bubble img{
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+    display: block;
+  }
+  .sticker-time{
+    display: block;
+    margin-top: 2px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.6rem;
+    color: #a85c76;
+  }
+  .bubble-row.admin .sticker-time{ text-align: left; }
+  .bubble-row:not(.admin) .sticker-time{ text-align: right; }
+
   .message-field{
     flex: 1;
     border: none;
@@ -664,10 +727,12 @@
       </div>
       <div class="message-row">
         <button type="button" class="emoji-toggle" id="emojiToggle" aria-label="Pilih emoji">☺</button>
+        <button type="button" class="sticker-toggle" id="stickerToggle" aria-label="Pilih stiker"><img src="" alt="" id="stickerToggleIcon"></button>
         <input type="text" id="commentMessage" class="message-field" placeholder="reply here" maxlength="300" required autocomplete="off">
         <input type="text" class="hp-field" id="hpField" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button type="submit" class="comment-send" id="commentSubmit" aria-label="Kirim balasan">♥</button>
         <div class="emoji-panel" id="emojiPanel" hidden></div>
+        <div class="sticker-panel" id="stickerPanel" hidden></div>
       </div>
       <p class="comment-status" id="commentStatus"></p>
     </form>
@@ -766,7 +831,7 @@
     }
 
     pinSubmit.disabled = true;
-    pinStatus.textContent = 'memeriksa...';
+    pinStatus.textContent = 'checking...';
 
     const { data, error } = await supabaseClient.rpc('verify_pin', {
       input_pin: pin,
@@ -894,15 +959,6 @@
     typingChannel.send({ type: 'broadcast', event: 'typing', payload: { stopped: true } });
   });
 
-  // begitu reload, kalau identitas masih diinget DAN sebelumnya lagi di
-  // Chat, langsung balik ke Chat lagi -- gak direset ke Halaman Depan
-  if(USER_IDENTITY && sessionStorage.getItem('currentView') === 'chat'){
-    viewWelcome.classList.remove('is-active');
-    viewChat.classList.add('is-active');
-    syncMissed();
-    scrollToBottom();
-  }
-
   /* ================= CHAT / KOMENTAR ================= */
   const commentsListWrap = document.getElementById('commentsList');
   const commentsList = document.getElementById('commentsList');
@@ -915,6 +971,9 @@
   const commentStatus = document.getElementById('commentStatus');
   const emojiToggle = document.getElementById('emojiToggle');
   const emojiPanel = document.getElementById('emojiPanel');
+  const stickerToggle = document.getElementById('stickerToggle');
+  const stickerToggleIcon = document.getElementById('stickerToggleIcon');
+  const stickerPanel = document.getElementById('stickerPanel');
   const typingIndicator = document.getElementById('typingIndicator');
   const typingName = document.getElementById('typingName');
   const replyBanner = document.getElementById('replyBanner');
@@ -1024,6 +1083,69 @@
     emojiToggle.classList.remove('active');
   });
 
+  // ---------- STICKER PICKER ----------
+  const STICKER_FILES = [
+    'Peafowl_1.png','Peafowl_2.png','Peafowl_3.png','Peafowl_4.png','Peafowl_5.png',
+    'Peafowl_6.png','Peafowl_7.png','Peafowl_8.png','Peafowl_9.png'
+  ];
+  const STICKER_BASE_URL = SUPABASE_URL + '/storage/v1/object/public/stickers/';
+
+  stickerToggleIcon.src = STICKER_BASE_URL + STICKER_FILES[0];
+  stickerPanel.innerHTML = STICKER_FILES.map(file =>
+    `<button type="button" data-file="${file}"><img src="${STICKER_BASE_URL}${file}" alt="stiker" loading="lazy"></button>`
+  ).join('');
+
+  stickerToggle.addEventListener('mousedown', (e) => e.preventDefault());
+  stickerPanel.addEventListener('mousedown', (e) => e.preventDefault());
+
+  stickerToggle.addEventListener('click', () => {
+    const willOpen = stickerPanel.hidden;
+    stickerPanel.hidden = !willOpen;
+    stickerToggle.classList.toggle('active', willOpen);
+    // panel emoji ditutup biar gak numpuk berdua
+    emojiPanel.hidden = true;
+    emojiToggle.classList.remove('active');
+  });
+
+  stickerPanel.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    if(!USER_IDENTITY) return;
+
+    stickerPanel.hidden = true;
+    stickerToggle.classList.remove('active');
+
+    clearTimeout(typingDebounceTimer);
+    typingChannel.send({ type: 'broadcast', event: 'typing', payload: { stopped: true } });
+
+    const { data, error } = await supabaseClient
+      .from('comments')
+      .insert({
+        name: USER_IDENTITY,
+        message: '',
+        sticker: btn.dataset.file,
+        reply_name: replyTo?.name ?? null,
+        reply_message: replyTo?.message ?? null
+      })
+      .select()
+      .single();
+
+    if(error){
+      console.error(error);
+      return;
+    }
+
+    renderComment(data);
+    clearReplyTo();
+  });
+
+  document.addEventListener('click', (e) => {
+    if(stickerPanel.hidden) return;
+    if(e.target === stickerToggle || stickerToggle.contains(e.target) || stickerPanel.contains(e.target)) return;
+    stickerPanel.hidden = true;
+    stickerToggle.classList.remove('active');
+  });
+
   // ---------- INDIKATOR SEDANG MENGETIK (Supabase Realtime Broadcast) ----------
   const typingChannel = supabaseClient.channel('typing-status');
   let hideTypingTimeout = null;
@@ -1102,9 +1224,29 @@
     const cleanMessage = row.message || '';
     const isAdmin = row.name === 'Ananda';
     const displayName = row.name;
+    const isSticker = !!row.sticker;
 
     const item = document.createElement('div');
     item.className = 'bubble-row' + (isAdmin ? ' admin' : '');
+
+    if(isSticker){
+      item.innerHTML = `
+        <p class="comment-name">${escapeHtml(displayName)}</p>
+        <div class="sticker-bubble">
+          ${row.reply_name ? '<div class="reply-quote"><p class="reply-quote-name"></p><p class="reply-quote-text"></p></div>' : ''}
+          <img src="${STICKER_BASE_URL}${escapeHtml(row.sticker)}" alt="stiker" loading="lazy">
+          <span class="sticker-time">${formatSentTime(row.created_at)}</span>
+        </div>
+      `;
+      if(row.reply_name){
+        item.querySelector('.reply-quote-name').textContent = row.reply_name;
+        item.querySelector('.reply-quote-text').textContent = row.reply_message || '';
+      }
+      commentsList.appendChild(item);
+      scrollToBottom();
+      return;
+    }
+
     item.innerHTML = `
       <p class="comment-name">${escapeHtml(displayName)}</p>
       <div class="comment-bubble${isAdmin ? ' admin' : ''}">
@@ -1214,6 +1356,17 @@
     .subscribe();
 
   loadComments();
+
+  // begitu reload, kalau identitas masih diinget DAN sebelumnya lagi di
+  // Chat, langsung balik ke Chat lagi -- gak direset ke Halaman Depan.
+  // Ditaruh di paling akhir biar semua variabel chat (lastSeenAt, dll)
+  // sudah pasti siap duluan sebelum dipakai.
+  if(USER_IDENTITY && sessionStorage.getItem('currentView') === 'chat'){
+    viewWelcome.classList.remove('is-active');
+    viewChat.classList.add('is-active');
+    syncMissed();
+    scrollToBottom();
+  }
 </script>
 
 </body>
