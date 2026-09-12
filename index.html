@@ -198,6 +198,7 @@
     padding: 24px;
     max-width: 380px;
   }
+
   .welcome-icon{ font-size: 2.4rem; margin-bottom: 10px; }
   .welcome-greeting{
     font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
@@ -355,6 +356,47 @@
     font-size: 0.7rem;
     color: #c9748f;
     margin: 0;
+  }
+
+  .letter-reply-box{
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(217,90,125,0.2);
+  }
+  .letter-reply-box[hidden]{ display: none; }
+  .letter-reply-textarea{
+    width: 100%;
+    min-height: 90px;
+    resize: vertical;
+    border: 1px solid rgba(217,90,125,0.25);
+    border-radius: 10px;
+    padding: 10px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.85rem;
+    color: var(--ink);
+    outline: none;
+    margin-bottom: 10px;
+  }
+  .letter-reply-textarea:focus{ border-color: var(--wax); box-shadow: 0 0 0 3px rgba(217,90,125,0.15); }
+  .letter-reply-send-btn{
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: linear-gradient(160deg, var(--wax-light), var(--wax));
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(217,90,125,0.3);
+  }
+  .letter-reply-send-btn:disabled{ opacity: 0.6; cursor: default; }
+  .letter-reply-status{
+    font-size: 0.72rem;
+    color: #c9748f;
+    min-height: 15px;
+    margin: 8px 0 0;
   }
 
   .letter-toast{
@@ -747,6 +789,79 @@
   .sticker-toggle:hover{ background: rgba(224,128,152,0.22); }
   .sticker-toggle.active{ background: var(--wax); transform: scale(1.05); }
 
+  .viewonce-toggle{
+    flex: none;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: rgba(224,128,152,0.12);
+    font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .viewonce-toggle[hidden]{ display: none; }
+  .viewonce-toggle:hover{ background: rgba(224,128,152,0.22); }
+
+  /* ---------- KARTU FOTO SEKALI-LIHAT DI CHAT ---------- */
+  .viewonce-card{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(160deg, #2b2b3a, #1e1e28);
+    border-radius: 14px;
+    padding: 12px 16px;
+    max-width: 210px;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    transition: transform 0.15s ease;
+  }
+  .viewonce-card:hover{ transform: translateY(-2px); }
+  .viewonce-card.opened{ cursor: default; opacity: 0.6; }
+  .viewonce-card.opened:hover{ transform: none; }
+  .viewonce-card-icon{ font-size: 1.3rem; flex: none; }
+  .viewonce-card-text{ text-align: left; }
+  .viewonce-card-title{
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+  }
+  .viewonce-card-hint{
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.6);
+    margin: 2px 0 0;
+  }
+
+  .viewonce-overlay{
+    position: fixed;
+    inset: 0;
+    z-index: 65;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .viewonce-overlay[hidden]{ display: none; }
+  .viewonce-img{
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .viewonce-close{
+    position: absolute;
+    top: 22px; right: 14px;
+    z-index: 3;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
   .sticker-panel{
     position: absolute;
     left: 40px;
@@ -917,14 +1032,27 @@
     <div class="letter-read-card">
       <button type="button" class="letter-close-btn" id="letterReadClose" aria-label="Tutup">✕</button>
       <div class="letter-read-seal">💌</div>
-      <p class="letter-read-heading">From Ibu</p>
+      <p class="letter-read-heading" id="letterReadHeading">From Ibu</p>
       <p class="letter-read-body" id="letterReadBody"></p>
       <p class="letter-read-time" id="letterReadTime"></p>
+
+      <div class="letter-reply-box" id="letterReplyBox" hidden>
+        <textarea class="letter-reply-textarea" id="letterReplyText" placeholder="Write your reply..." maxlength="1000"></textarea>
+        <button type="button" class="letter-reply-send-btn" id="letterReplySendBtn">Send Reply</button>
+        <p class="letter-reply-status" id="letterReplyStatus"></p>
+      </div>
     </div>
   </div>
 
   <!-- notif kecil "Send Success" -->
   <div class="letter-toast" id="letterToast" hidden>Send Success ✉️</div>
+
+  <!-- viewer foto sekali-lihat -- SENGAJA gak ada handler klik backdrop,
+       cuma bisa ditutup lewat tombol X -->
+  <div class="viewonce-overlay" id="viewonceOverlay" hidden>
+    <button type="button" class="viewonce-close" id="viewonceClose" aria-label="Tutup">✕</button>
+    <img class="viewonce-img" id="viewonceImg" alt="foto">
+  </div>
 
   <div class="view view-chat" id="viewChat">
     <div class="chat-header">
@@ -957,7 +1085,9 @@
       <div class="message-row">
         <button type="button" class="emoji-toggle" id="emojiToggle" aria-label="Pilih emoji">☺</button>
         <button type="button" class="sticker-toggle" id="stickerToggle" aria-label="Pilih stiker"><img src="" alt="" id="stickerToggleIcon"></button>
-        <input type="text" id="commentMessage" class="message-field" placeholder="reply here" required autocomplete="off">
+        <button type="button" class="viewonce-toggle" id="viewonceToggle" aria-label="Kirim foto sekali lihat" hidden>📷</button>
+        <input type="file" accept="image/*" id="viewonceFileInput" hidden>
+        <input type="text" id="commentMessage" class="message-field" placeholder="reply here" maxlength="300" required autocomplete="off">
         <input type="text" class="hp-field" id="hpField" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button type="submit" class="comment-send" id="commentSubmit" aria-label="Kirim balasan">♥</button>
         <div class="emoji-panel" id="emojiPanel" hidden></div>
@@ -1132,7 +1262,7 @@
     }
   }
   bgEls.pagi.dataset.itemClass = 'petal';
-  scatter(bgEls.pagi, ['🌸','🔅','💗'], 10, 9);
+  scatter(bgEls.pagi, ['🌸','✿','💗'], 10, 9);
   bgEls.siang.dataset.itemClass = 'confetti';
   scatter(bgEls.siang, ['💗','💕','✨'], 12, 6.5);
   const cloud1 = document.createElement('div');
@@ -1326,8 +1456,7 @@
     'Peafowl 1.png','Peafowl 2.png','Peafowl 3.png','Peafowl 4.png','Peafowl 5.png',
     'Peafowl 6.png','Peafowl 7.png','Peafowl 8.png','Peafowl 9.png','Peafowl 10.png',
     'Peafowl 11.png','Peafowl 12.png','Peafowl 13.png','Peafowl 14.png','Peafowl 15.png',
-    'Peafowl 16.png','Peafowl 17.png','Peafowl 18.png','Ananda 1.png','Ananda 2.png','Ananda 3.png',
-    'Ananda 4.png','Ananda 5.png','Ananda 6.png','Ananda 7.png','Ananda 8.png','Ananda 9.png'
+    'Peafowl 16.png','Peafowl 17.png','Peafowl 18.png'
   ];
   const STICKER_BASE_URL = SUPABASE_URL + '/storage/v1/object/public/stickers/';
 
@@ -1399,9 +1528,14 @@
   const letterComposeStatus = document.getElementById('letterComposeStatus');
   const letterReadOverlay = document.getElementById('letterReadOverlay');
   const letterReadClose = document.getElementById('letterReadClose');
+  const letterReadHeading = document.getElementById('letterReadHeading');
   const letterReadBody = document.getElementById('letterReadBody');
   const letterReadTime = document.getElementById('letterReadTime');
   const letterToast = document.getElementById('letterToast');
+  const letterReplyBox = document.getElementById('letterReplyBox');
+  const letterReplyText = document.getElementById('letterReplyText');
+  const letterReplySendBtn = document.getElementById('letterReplySendBtn');
+  const letterReplyStatus = document.getElementById('letterReplyStatus');
 
   letterSendBtn.addEventListener('click', () => {
     letterComposeText.value = ''; // selalu kosong tiap dibuka, gak nyimpen draft
@@ -1461,14 +1595,24 @@
 
   // buka popup baca surat -- SENGAJA gak ada handler klik backdrop,
   // cuma bisa ditutup lewat tombol X
+  let currentLetterRow = null;
+
   async function openLetter(row, cardEl){
+    currentLetterRow = row;
+    letterReadHeading.textContent = row.name === 'Ananda' ? 'From Ibu' : 'From Peafowl';
     letterReadBody.textContent = row.letter_content || '';
     letterReadTime.textContent = formatSentTime(row.created_at);
     letterReadOverlay.hidden = false;
 
-    // status "sudah dibaca" cuma di-update kalau yang buka itu Peafowl
-    // (bukan Ananda yang lagi ngecek suratnya sendiri)
-    if(!row.letter_opened && USER_IDENTITY === 'Peafowl'){
+    // kolom balas cuma muncul kalau ini BUKAN surat kamu sendiri
+    // (biar bisa surat-suratan bolak-balik)
+    const isOwnLetter = row.name === USER_IDENTITY;
+    letterReplyBox.hidden = isOwnLetter;
+    letterReplyText.value = '';
+    letterReplyStatus.textContent = '';
+
+    // status "sudah dibaca" di-update kalau yang buka BUKAN si pengirim
+    if(!row.letter_opened && !isOwnLetter){
       row.letter_opened = true;
       if(cardEl) cardEl.classList.add('opened');
       const { error } = await supabaseClient
@@ -1478,6 +1622,42 @@
       if(error) console.error(error);
     }
   }
+
+  letterReplySendBtn.addEventListener('click', async () => {
+    const text = letterReplyText.value.trim();
+    if(!text){
+      letterReplyStatus.textContent = 'Tulis dulu balasannya ya.';
+      return;
+    }
+    if(!USER_IDENTITY) return;
+
+    letterReplySendBtn.disabled = true;
+    letterReplyStatus.textContent = 'Sending...';
+
+    const { data, error } = await supabaseClient
+      .from('comments')
+      .insert({
+        name: USER_IDENTITY,
+        message: '',
+        letter_content: text,
+        letter_opened: false
+      })
+      .select()
+      .single();
+
+    letterReplySendBtn.disabled = false;
+
+    if(error){
+      letterReplyStatus.textContent = 'Gagal mengirim, coba lagi ya.';
+      console.error(error);
+      return;
+    }
+
+    letterReadOverlay.hidden = true;
+    letterReplyText.value = '';
+    renderComment(data);
+    showLetterToast();
+  });
 
   letterReadClose.addEventListener('click', () => {
     letterReadOverlay.hidden = true;
@@ -1490,11 +1670,105 @@
     if(!card) return;
     const row = {
       id: card.dataset.id,
+      name: card.dataset.sender,
       letter_content: card.dataset.letterContent,
       letter_opened: card.classList.contains('opened'),
       created_at: card.dataset.createdAt
     };
     openLetter(row, card);
+  });
+
+  // ---------- FOTO SEKALI-LIHAT ----------
+  const viewonceToggle = document.getElementById('viewonceToggle');
+  const viewonceFileInput = document.getElementById('viewonceFileInput');
+  const viewonceOverlay = document.getElementById('viewonceOverlay');
+  const viewonceClose = document.getElementById('viewonceClose');
+  const viewonceImg = document.getElementById('viewonceImg');
+
+  const VIEWONCE_BASE_URL = SUPABASE_URL + '/storage/v1/object/public/stories/';
+  function viewonceUrl(path){ return VIEWONCE_BASE_URL + encodeURIComponent(path); }
+
+  viewonceToggle.addEventListener('mousedown', (e) => e.preventDefault());
+  viewonceToggle.addEventListener('click', () => viewonceFileInput.click());
+
+  viewonceFileInput.addEventListener('change', async () => {
+    const file = viewonceFileInput.files?.[0];
+    viewonceFileInput.value = '';
+    if(!file || !USER_IDENTITY) return;
+    if(!file.type.startsWith('image/')){
+      alert('File harus berupa gambar ya.');
+      return;
+    }
+
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `viewonce-${USER_IDENTITY}-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabaseClient
+      .storage
+      .from('stories')
+      .upload(path, file, { contentType: file.type });
+
+    if(uploadError){
+      console.error(uploadError);
+      alert('Gagal upload foto, coba lagi ya.');
+      return;
+    }
+
+    clearTimeout(typingDebounceTimer);
+    typingChannel.send({ type: 'broadcast', event: 'typing', payload: { stopped: true } });
+
+    const { data, error } = await supabaseClient
+      .from('comments')
+      .insert({
+        name: USER_IDENTITY,
+        message: '',
+        viewonce_photo: path,
+        viewonce_opened: false,
+        reply_name: replyTo?.name ?? null,
+        reply_message: replyTo?.message ?? null
+      })
+      .select()
+      .single();
+
+    if(error){ console.error(error); return; }
+
+    renderComment(data);
+    clearReplyTo();
+  });
+
+  async function openViewonce(row, cardEl){
+    if(row.viewonce_opened) return; // udah pernah dibuka, gak bisa dibuka lagi
+
+    viewonceImg.src = viewonceUrl(row.viewonce_photo);
+    viewonceOverlay.hidden = false;
+
+    if(cardEl){
+      cardEl.classList.add('opened');
+      cardEl.querySelector('.viewonce-card-icon').textContent = '📷';
+      cardEl.querySelector('.viewonce-card-hint').textContent = 'Opened';
+    }
+
+    const { error } = await supabaseClient
+      .from('comments')
+      .update({ viewonce_opened: true })
+      .eq('id', row.id);
+    if(error) console.error(error);
+  }
+
+  viewonceClose.addEventListener('click', () => {
+    viewonceOverlay.hidden = true;
+    viewonceImg.src = '';
+  });
+
+  commentsList.addEventListener('click', (e) => {
+    const card = e.target.closest('.viewonce-card');
+    if(!card) return;
+    const row = {
+      id: card.dataset.id,
+      viewonce_photo: card.dataset.viewoncePhoto,
+      viewonce_opened: card.classList.contains('opened')
+    };
+    openViewonce(row, card);
   });
 
   // ---------- INDIKATOR SEDANG MENGETIK (Supabase Realtime Broadcast) ----------
@@ -1550,7 +1824,7 @@
     const d = new Date(dateStr);
     const now = new Date();
     const sameDay = d.toDateString() === now.toDateString();
-    const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const timePart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     if(sameDay) return timePart;
     const datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
     return datePart + ', ' + timePart;
@@ -1577,6 +1851,7 @@
     const displayName = row.name;
     const isSticker = !!row.sticker;
     const isLetter = !!row.letter_content;
+    const isViewonce = !!row.viewonce_photo;
 
     const item = document.createElement('div');
     item.className = 'bubble-row' + (isAdmin ? ' admin' : '');
@@ -1584,16 +1859,39 @@
 
     if(isLetter){
       const opened = !!row.letter_opened;
+      const fromLabel = row.name === 'Ananda' ? 'From Ibu' : 'From Peafowl';
       item.innerHTML = `
-        <div class="letter-card${opened ? ' opened' : ''}" data-id="${row.id}" data-created-at="${row.created_at}">
+        <div class="letter-card${opened ? ' opened' : ''}" data-id="${row.id}" data-created-at="${row.created_at}" data-sender="${row.name}">
           <span class="letter-card-icon">${opened ? '💌' : '✉️'}</span>
           <div class="letter-card-text">
-            <p class="letter-card-from">From Ibu</p>
+            <p class="letter-card-from">${fromLabel}</p>
             <p class="letter-card-hint">${opened ? 'Opened' : 'Tap to open'}</p>
           </div>
         </div>
       `;
       item.querySelector('.letter-card').dataset.letterContent = row.letter_content;
+      if(prepend){
+        loadOlderBtn.insertAdjacentElement('afterend', item);
+      } else {
+        commentsList.appendChild(item);
+        scrollToBottom();
+      }
+      return;
+    }
+
+    if(isViewonce){
+      const opened = !!row.viewonce_opened;
+      item.innerHTML = `
+        <p class="comment-name">${escapeHtml(displayName)}</p>
+        <div class="viewonce-card${opened ? ' opened' : ''}" data-id="${row.id}">
+          <span class="viewonce-card-icon">${opened ? '📷' : '📸'}</span>
+          <div class="viewonce-card-text">
+            <p class="viewonce-card-title">Photo</p>
+            <p class="viewonce-card-hint">${opened ? 'Opened' : 'Tap to view once'}</p>
+          </div>
+        </div>
+      `;
+      item.querySelector('.viewonce-card').dataset.viewoncePhoto = row.viewonce_photo;
       if(prepend){
         loadOlderBtn.insertAdjacentElement('afterend', item);
       } else {
@@ -1782,12 +2080,21 @@
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'comments' }, (payload) => {
       // sinkronisasi status "sudah dibaca" ke browser lain (misal Ananda
       // liat kartu suratnya berubah begitu Peafowl buka, tanpa reload)
-      if(!payload.new?.letter_opened) return;
-      const cardEl = commentsList.querySelector(`.letter-card[data-id="${payload.new.id}"]`);
-      if(cardEl && !cardEl.classList.contains('opened')){
-        cardEl.classList.add('opened');
-        cardEl.querySelector('.letter-card-icon').textContent = '💌';
-        cardEl.querySelector('.letter-card-hint').textContent = 'Opened';
+      if(payload.new?.letter_opened){
+        const letterEl = commentsList.querySelector(`.letter-card[data-id="${payload.new.id}"]`);
+        if(letterEl && !letterEl.classList.contains('opened')){
+          letterEl.classList.add('opened');
+          letterEl.querySelector('.letter-card-icon').textContent = '💌';
+          letterEl.querySelector('.letter-card-hint').textContent = 'Opened';
+        }
+      }
+      if(payload.new?.viewonce_opened){
+        const photoEl = commentsList.querySelector(`.viewonce-card[data-id="${payload.new.id}"]`);
+        if(photoEl && !photoEl.classList.contains('opened')){
+          photoEl.classList.add('opened');
+          photoEl.querySelector('.viewonce-card-icon').textContent = '📷';
+          photoEl.querySelector('.viewonce-card-hint').textContent = 'Opened';
+        }
       }
     })
     .subscribe();
