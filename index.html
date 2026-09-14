@@ -1140,6 +1140,7 @@
     pinGate.classList.add('hidden');
     updateLetterButtonVisibility();
     startPresence();
+    startHeartbeat();
   }
 
   /* ================= STATUS ONLINE (Supabase Realtime Presence) ================= */
@@ -1147,7 +1148,55 @@
   const presenceText = document.getElementById('presenceText');
   let presenceStarted = false;
 
+  // ---------- LAST SEEN (khusus buat dipantau Ananda) ----------
+  let peafowlLastSeen = null;
+
+  async function sendHeartbeat(){
+    if(!USER_IDENTITY) return;
+    const { error } = await supabaseClient
+      .from('presence_log')
+      .upsert({ identity: USER_IDENTITY, last_seen: new Date().toISOString() });
+    if(error) console.error(error);
+  }
+
+  async function loadPeafowlLastSeen(){
+    if(USER_IDENTITY !== 'Ananda') return;
+    const { data, error } = await supabaseClient
+      .from('presence_log')
+      .select('last_seen')
+      .eq('identity', 'Peafowl')
+      .maybeSingle();
+    if(error){ console.error(error); return; }
+    peafowlLastSeen = data?.last_seen || null;
+  }
+
+  function startHeartbeat(){
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 45000);
+    if(USER_IDENTITY === 'Ananda'){
+      loadPeafowlLastSeen().then(() => {
+        // presence udah kepanggil duluan biasanya, refresh biar last seen ikut tampil
+        if(presenceStarted) updatePresenceUI(lastPresenceState || {});
+      });
+
+      // sinkron live -- begitu Peafowl kirim heartbeat baru, ke-update
+      // tanpa reload di sisi Ananda
+      supabaseClient
+        .channel('presence-log-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'presence_log' }, (payload) => {
+          if(payload.new?.identity === 'Peafowl'){
+            peafowlLastSeen = payload.new.last_seen;
+            if(presenceStarted) updatePresenceUI(lastPresenceState || {});
+          }
+        })
+        .subscribe();
+    }
+  }
+
+  let lastPresenceState = null;
+
   function updatePresenceUI(state){
+    lastPresenceState = state;
     const identities = new Set();
     Object.values(state).forEach(entries => {
       entries.forEach(entry => { if(entry.identity) identities.add(entry.identity); });
@@ -1159,7 +1208,12 @@
       presenceText.textContent = 'Both of you online';
       presenceDot.className = 'presence-dot both';
     } else {
-      presenceText.textContent = otherIdentity + ' Offline';
+      let text = otherIdentity + ' Offline';
+      // last seen cuma ditampilin ke Ananda, dan cuma buat Peafowl
+      if(USER_IDENTITY === 'Ananda' && otherIdentity === 'Peafowl' && peafowlLastSeen){
+        text += ' · Last seen ' + formatSentTime(peafowlLastSeen);
+      }
+      presenceText.textContent = text;
       presenceDot.className = 'presence-dot';
     }
   }
@@ -1187,6 +1241,7 @@
     pinGate.classList.add('hidden');
     updateLetterButtonVisibility();
     startPresence();
+    startHeartbeat();
   }
 
   pinForm.addEventListener('submit', async (e) => {
