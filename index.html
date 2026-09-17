@@ -210,6 +210,22 @@
     opacity: 0.85;
     margin: 0 0 28px;
   }
+
+  .weather-widget{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.55);
+    border-radius: 999px;
+    padding: 7px 16px;
+    margin: -14px 0 20px;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.78rem;
+    color: var(--ink);
+  }
+  .weather-widget[hidden]{ display: none; }
+  body.mode-malam .weather-widget{ background: rgba(255,255,255,0.12); color: #fff0f4; }
+
   .welcome-cta{
     border: none;
     cursor: pointer;
@@ -490,6 +506,126 @@
   body.mode-malam .back-btn{ background: rgba(255,255,255,0.15); color: #fff0f4; }
 
   .mode-icon{ font-size: 1.6rem; }
+
+  /* ---------- WIDGET CUACA DI HEADER CHAT ---------- */
+  .chat-weather{
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .chat-weather[hidden]{ display: none; }
+
+  .chat-weather-scene{
+    position: relative;
+    width: 38px;
+    height: 30px;
+    overflow: hidden;
+  }
+
+  .chat-weather-temp{
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #a85c76;
+  }
+  body.mode-malam .chat-weather-temp{ color: #f2c6d4; }
+
+  /* matahari */
+  .cw-sun{
+    position: absolute;
+    top: 5px; left: 11px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff3c4, #ffc93c);
+    box-shadow: 0 0 10px 2px rgba(255,201,60,0.5);
+    animation: cw-sun-pulse 3s ease-in-out infinite;
+  }
+  @keyframes cw-sun-pulse{
+    0%, 100%{ transform: scale(1); box-shadow: 0 0 10px 2px rgba(255,201,60,0.5); }
+    50%{ transform: scale(1.1); box-shadow: 0 0 14px 4px rgba(255,201,60,0.65); }
+  }
+  .cw-sun.hot{
+    background: radial-gradient(circle at 35% 30%, #ffd6a0, #ff7a3c);
+    box-shadow: 0 0 12px 3px rgba(255,122,60,0.55);
+    animation: cw-sun-hot 1.6s ease-in-out infinite;
+  }
+  @keyframes cw-sun-hot{
+    0%, 100%{ transform: scale(1); }
+    50%{ transform: scale(1.16); }
+  }
+
+  /* awan */
+  .cw-cloud{
+    position: absolute;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(120,80,95,0.2);
+  }
+  .cw-cloud.c1{
+    width: 26px; height: 11px;
+    top: 9px; left: 5px;
+    animation: cw-cloud-float 4s ease-in-out infinite;
+  }
+  .cw-cloud.c1::before{
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    top: -5px; left: 6px;
+  }
+  .cw-cloud.c2{
+    width: 18px; height: 8px;
+    top: 16px; left: 14px;
+    background: #f0e2ea;
+    animation: cw-cloud-float 5.2s ease-in-out infinite reverse;
+  }
+  @keyframes cw-cloud-float{
+    0%, 100%{ transform: translateX(0); }
+    50%{ transform: translateX(3px); }
+  }
+  body.mode-malam .cw-cloud{ background: #e8dbe4; }
+  body.mode-malam .cw-cloud.c1::before{ background: #e8dbe4; }
+
+  /* tetes hujan */
+  .cw-drop{
+    position: absolute;
+    width: 2px;
+    height: 7px;
+    border-radius: 999px;
+    background: #7fb2e5;
+    animation: cw-drop-fall 1s linear infinite;
+  }
+  @keyframes cw-drop-fall{
+    0%{ transform: translateY(0); opacity: 0; }
+    20%{ opacity: 1; }
+    100%{ transform: translateY(14px); opacity: 0; }
+  }
+
+  /* petir */
+  .cw-bolt{
+    position: absolute;
+    bottom: 1px; left: 16px;
+    font-size: 0.72rem;
+    animation: cw-bolt-flash 2.2s ease-in-out infinite;
+  }
+  @keyframes cw-bolt-flash{
+    0%, 62%, 100%{ opacity: 0; transform: scale(0.8); }
+    66%{ opacity: 1; transform: scale(1.15); }
+    72%{ opacity: 0.25; }
+    78%{ opacity: 1; transform: scale(1); }
+    86%{ opacity: 0; }
+  }
+
+  @media (max-width: 420px){
+    .chat-weather{ right: 10px; gap: 5px; }
+    .chat-weather-scene{ width: 32px; height: 26px; }
+    .chat-weather-temp{ font-size: 0.66rem; }
+  }
 
   .chat-area{
     flex: 1;
@@ -1011,6 +1147,7 @@
       <div class="welcome-icon" id="welcomeIcon">☀️</div>
       <h1 class="welcome-greeting" id="welcomeGreeting">Good Morning, Peafowl</h1>
       <p class="welcome-subtitle" id="welcomeSubtitle">I hope you doing great today! ☁️</p>
+      <p class="weather-widget" id="weatherWidget" hidden></p>
       <button type="button" class="welcome-cta" id="welcomeCta">Start Chat ♥</button>
       <button type="button" class="letter-send-btn" id="letterSendBtn" hidden>Send Letter ✉️</button>
     </div>
@@ -1058,6 +1195,10 @@
     <div class="chat-header">
       <button type="button" class="back-btn" id="backBtn" aria-label="Kembali ke halaman depan">‹</button>
       <span class="mode-icon" id="modeIcon">☀️</span>
+      <div class="chat-weather" id="chatWeather" hidden>
+        <div class="chat-weather-scene" id="chatWeatherScene"></div>
+        <span class="chat-weather-temp" id="chatWeatherTemp"></span>
+      </div>
     </div>
 
     <div class="chat-area" id="commentsList">
@@ -1141,6 +1282,7 @@
     updateLetterButtonVisibility();
     startPresence();
     startHeartbeat();
+    renderWeatherWidget();
   }
 
   /* ================= STATUS ONLINE (Supabase Realtime Presence) ================= */
@@ -1242,6 +1384,7 @@
     updateLetterButtonVisibility();
     startPresence();
     startHeartbeat();
+    renderWeatherWidget();
   }
 
   pinForm.addEventListener('submit', async (e) => {
@@ -1356,6 +1499,106 @@
   }
 
   applyMode(modeFromClock());
+
+  /* ================= WIDGET CUACA (Yangon, Myanmar) ================= */
+  const weatherWidget = document.getElementById('weatherWidget');
+  const chatWeather = document.getElementById('chatWeather');
+  const chatWeatherScene = document.getElementById('chatWeatherScene');
+  const chatWeatherTemp = document.getElementById('chatWeatherTemp');
+  let weatherData = null; // { code, temp }
+
+  const WEATHER_MESSAGES = {
+    Peafowl: {
+      sunny: 'ယနေ့ နေသာတယ်နော်! အပြုံးလှလှနဲ့ နေမယ့်နေ့ပေါ့ ☀️',
+      hot:   'ယနေ့ပူတယ်နော်၊ ရေအများကြီး သောက်ပေးနော် ♡',
+      cloudy:'ယနေ့ တိမ်ထူနေတယ်... နှေးနှေးလေး နေပါနော်',
+      rain:  'မိုးရွာနေတယ်၊ မစိုအောင် သတိထားနော်!',
+      storm: 'မိုးကြိုးပစ်နေတယ်... ဘယ်မှမသွားနဲ့နော်၊ လုံခြုံတဲ့နေရာမှာ နေပါ'
+    },
+    Ananda: {
+      sunny: "It's sunny today! Perfect day to smile ☀️",
+      hot:   "It's hot today, drink lots of water! Stay cool ♡",
+      cloudy:'Cloudy day, perfect for a lazy afternoon 🌥️',
+      rain:  "It's raining, don't get soaked out there! ☔",
+      storm: "Thunderstorm today, don't go anywhere — stay somewhere safe"
+    }
+  };
+  const WEATHER_ICON = { sunny: '☀️', hot: '🔥', cloudy: '☁️', drizzle: '🌦️', rain: '🌧️', storm: '⛈️' };
+
+  function weatherCategory(code, temp){
+    if([95, 96, 99].includes(code)) return 'storm';
+    // gerimis / hujan ringan
+    if([51,53,55,56,57,61,66,80].includes(code)) return 'drizzle';
+    // hujan sedang sampai deras
+    if([63,65,67,81,82].includes(code)) return 'rain';
+    if([45, 48].includes(code)) return 'cloudy';
+    if([2, 3].includes(code)) return 'cloudy';
+    // code 0/1 = cerah -- tapi kalau suhunya tinggi, prioritasin pesan "panas"
+    if(temp >= 32) return 'hot';
+    return 'sunny';
+  }
+
+  function renderWeatherWidget(){
+    if(!weatherData || !USER_IDENTITY) return;
+    const messages = WEATHER_MESSAGES[USER_IDENTITY];
+    if(!messages) return;
+    const category = weatherCategory(weatherData.code, weatherData.temp);
+    // pesan gerimis pakai teks hujan (biar gak perlu nambah kalimat baru)
+    const msgKey = category === 'drizzle' ? 'rain' : category;
+    weatherWidget.textContent = WEATHER_ICON[category] + ' ' + messages[msgKey];
+    weatherWidget.hidden = false;
+    renderChatWeather(category);
+  }
+
+  function renderChatWeather(category){
+    if(!chatWeatherScene) return;
+    let html = '';
+
+    if(category === 'sunny' || category === 'hot'){
+      html = `<div class="cw-sun${category === 'hot' ? ' hot' : ''}"></div>`;
+    } else if(category === 'cloudy'){
+      html = `<div class="cw-cloud c1"></div><div class="cw-cloud c2"></div>`;
+    } else if(category === 'drizzle' || category === 'rain'){
+      // gerimis: tetesnya lebih sedikit & lebih pelan dari hujan
+      const dropCount = category === 'drizzle' ? 2 : 4;
+      const speed = category === 'drizzle' ? 1.5 : 0.9;
+      let drops = '';
+      for(let i = 0; i < dropCount; i++){
+        const left = 8 + i * 7;
+        const delay = (i * 0.25).toFixed(2);
+        drops += `<div class="cw-drop" style="left:${left}px; top:18px; animation-duration:${speed}s; animation-delay:${delay}s;"></div>`;
+      }
+      html = `<div class="cw-cloud c1"></div>${drops}`;
+    } else if(category === 'storm'){
+      let drops = '';
+      for(let i = 0; i < 3; i++){
+        const left = 7 + i * 9;
+        const delay = (i * 0.2).toFixed(2);
+        drops += `<div class="cw-drop" style="left:${left}px; top:18px; animation-duration:0.75s; animation-delay:${delay}s;"></div>`;
+      }
+      html = `<div class="cw-cloud c1"></div>${drops}<span class="cw-bolt">⚡</span>`;
+    }
+
+    chatWeatherScene.innerHTML = html;
+    chatWeatherTemp.textContent = Math.round(weatherData.temp) + '°';
+    chatWeather.hidden = false;
+  }
+
+  async function fetchWeather(){
+    try{
+      // koordinat Taungoo, Myanmar
+      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=18.9433&longitude=96.4297&current=temperature_2m,weather_code');
+      const json = await res.json();
+      weatherData = {
+        code: json.current.weather_code,
+        temp: json.current.temperature_2m
+      };
+      renderWeatherWidget();
+    } catch(err){
+      console.error(err);
+    }
+  }
+  fetchWeather();
 
   /* ================= VIEW SWITCHER ================= */
   const viewWelcome = document.getElementById('viewWelcome');
