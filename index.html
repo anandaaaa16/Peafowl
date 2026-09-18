@@ -541,16 +541,16 @@
     width: 16px; height: 16px;
     border-radius: 50%;
     background: radial-gradient(circle at 35% 30%, #fff3c4, #ffc93c);
-    box-shadow: 0 0 10px 2px rgba(255,201,60,0.5);
+    box-shadow: 0 0 6px 1px rgba(255,201,60,0.5);
     animation: cw-sun-pulse 3s ease-in-out infinite;
   }
   @keyframes cw-sun-pulse{
-    0%, 100%{ transform: scale(1); box-shadow: 0 0 10px 2px rgba(255,201,60,0.5); }
-    50%{ transform: scale(1.1); box-shadow: 0 0 14px 4px rgba(255,201,60,0.65); }
+    0%, 100%{ transform: scale(1); box-shadow: 0 0 6px 1px rgba(255,201,60,0.5); }
+    50%{ transform: scale(1.1); box-shadow: 0 0 8px 2px rgba(255,201,60,0.65); }
   }
   .cw-sun.hot{
     background: radial-gradient(circle at 35% 30%, #ffd6a0, #ff7a3c);
-    box-shadow: 0 0 12px 3px rgba(255,122,60,0.55);
+    box-shadow: 0 0 7px 1px rgba(255,122,60,0.55);
     animation: cw-sun-hot 1.6s ease-in-out infinite;
   }
   @keyframes cw-sun-hot{
@@ -625,6 +625,29 @@
     .chat-weather{ right: 10px; gap: 5px; }
     .chat-weather-scene{ width: 32px; height: 26px; }
     .chat-weather-temp{ font-size: 0.66rem; }
+  }
+
+  /* ---------- ANIMASI TRIGGER MAKAN/MINUM ---------- */
+  .food-anim-layer{
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 15;
+  }
+  .food-pop{
+    position: absolute;
+    bottom: 90px;
+    left: 50%;
+    font-size: 1.9rem;
+    opacity: 0;
+    animation: food-float-up 2.4s ease-out forwards;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+  }
+  @keyframes food-float-up{
+    0%{ transform: translate(-50%, 0) scale(0.5) rotate(0deg); opacity: 0; }
+    12%{ opacity: 1; transform: translate(calc(-50% + var(--drift, 0px)), -20px) scale(1) rotate(-6deg); }
+    100%{ transform: translate(calc(-50% + var(--drift, 0px)), -260px) scale(1.05) rotate(8deg); opacity: 0; }
   }
 
   .chat-area{
@@ -1192,6 +1215,7 @@
   </div>
 
   <div class="view view-chat" id="viewChat">
+    <div class="food-anim-layer" id="foodAnimLayer"></div>
     <div class="chat-header">
       <button type="button" class="back-btn" id="backBtn" aria-label="Kembali ke halaman depan">‹</button>
       <span class="mode-icon" id="modeIcon">☀️</span>
@@ -1377,16 +1401,6 @@
       });
   }
 
-  // baru dipanggil di sini, SETELAH presenceStarted siap -- ini yang
-  // kemarin ke-skip pas reload dan bikin seluruh skrip berhenti total
-  if(USER_IDENTITY){
-    pinGate.classList.add('hidden');
-    updateLetterButtonVisibility();
-    startPresence();
-    startHeartbeat();
-    renderWeatherWidget();
-  }
-
   pinForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const pin = pinInput.value.trim();
@@ -1455,7 +1469,10 @@
       el.textContent = items[Math.floor(Math.random() * items.length)];
       el.className = container.dataset.itemClass;
       el.style.left = Math.random() * 100 + '%';
-      el.style.animationDelay = (Math.random() * animDuration) + 's';
+      // delay NEGATIF: elemen langsung "dianggap" udah jalan sekian detik
+      // begitu halaman dimuat, jadi langsung tersebar di berbagai posisi
+      // ketimbang numpuk diam dulu di atas nunggu delay positif habis
+      el.style.animationDelay = '-' + (Math.random() * animDuration) + 's';
       container.appendChild(el);
     }
   }
@@ -1713,6 +1730,42 @@
 
   const renderedIds = new Set();
   let lastSeenAt = null;
+
+  // ---------- TRIGGER ANIMASI MAKAN / MINUM ----------
+  // begitu ada kata kunci ini di pesan yang BARU dikirim/diterima (bukan
+  // riwayat lama pas buka chat), muncul animasi emoji melayang
+  const foodAnimLayer = document.getElementById('foodAnimLayer');
+
+  const FOOD_TRIGGERS = [
+    { keywords: ['breakfast', 'sarapan'], emojis: ['🍳','🥞','🧇','🍞','☕'] },
+    { keywords: ['lunch', 'makan siang'], emojis: ['🍱','🍜','🥗','🍔'] },
+    { keywords: ['dinner', 'makan malam'], emojis: ['🍽️','🍲','🍝','🌙'] },
+    { keywords: ['drink water', 'minum air', 'minum', 'drink'], emojis: ['💧','🥤','🚰'] },
+    { keywords: ['eat', 'makan', 'laper', 'lapar', 'hungry'], emojis: ['🍴','😋','🍽️'] },
+  ];
+
+  function detectFoodTrigger(text){
+    const lower = ' ' + text.toLowerCase() + ' ';
+    for(const trig of FOOD_TRIGGERS){
+      if(trig.keywords.some(k => lower.includes(k))) return trig;
+    }
+    return null;
+  }
+
+  function spawnFoodAnimation(trig){
+    if(!foodAnimLayer) return;
+    const count = 7;
+    for(let i = 0; i < count; i++){
+      const span = document.createElement('span');
+      span.className = 'food-pop';
+      span.textContent = trig.emojis[Math.floor(Math.random() * trig.emojis.length)];
+      span.style.setProperty('--drift', Math.round(Math.random() * 120 - 60) + 'px');
+      span.style.animationDelay = (Math.random() * 0.45).toFixed(2) + 's';
+      span.style.left = (30 + Math.random() * 40) + '%';
+      foodAnimLayer.appendChild(span);
+      setTimeout(() => span.remove(), 2900);
+    }
+  }
 
   // ---------- EMOJI PICKER ----------
   const EMOJI_LIST = ['🍥','❤️','💕','💖','💗','💘','💌','🥰','😍','😘','🤗','☺️','😊','😂','🙈','😢','😅','✨','🌟','🌸','🌷','☁️','🌙','👉👈','💫'];
@@ -2135,7 +2188,7 @@
     return div.innerHTML;
   }
 
-  function renderComment(row, prepend){
+  function renderComment(row, prepend, live){
     if(row.id != null){
       if(renderedIds.has(row.id)) return;
       renderedIds.add(row.id);
@@ -2231,6 +2284,11 @@
       </div>
     `;
     item.querySelector('.comment-text').textContent = cleanMessage;
+
+    if(live && cleanMessage){
+      const trig = detectFoodTrigger(cleanMessage);
+      if(trig) spawnFoodAnimation(trig);
+    }
 
     if(row.reply_name){
       item.querySelector('.reply-quote-name').textContent = row.reply_name;
@@ -2363,7 +2421,7 @@
       return;
     }
 
-    renderComment(data);
+    renderComment(data, false, true);
     commentMessage.value = '';
     commentStatus.textContent = '';
     commentSubmit.disabled = false;
@@ -2374,7 +2432,7 @@
   supabaseClient
     .channel('comments-live')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
-      renderComment(payload.new);
+      renderComment(payload.new, false, true);
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'comments' }, (payload) => {
       // sinkronisasi status "sudah dibaca" ke browser lain (misal Ananda
@@ -2400,15 +2458,25 @@
 
   loadComments();
 
-  // begitu reload, kalau identitas masih diinget DAN sebelumnya lagi di
-  // Chat, langsung balik ke Chat lagi -- gak direset ke Halaman Depan.
-  // Ditaruh di paling akhir biar semua variabel chat (lastSeenAt, dll)
-  // sudah pasti siap duluan sebelum dipakai.
-  if(USER_IDENTITY && sessionStorage.getItem('currentView') === 'chat'){
-    viewWelcome.classList.remove('is-active');
-    viewChat.classList.add('is-active');
-    syncMissed();
-    scrollToBottom();
+  // ---------- RESTORE SESI SETELAH RELOAD ----------
+  // Ditaruh PALING BAWAH sengaja, setelah semua variabel & fungsi (termasuk
+  // weatherData, commentsList, syncMissed, dll) selesai didefinisikan.
+  // Kalau blok ini dipindah ke atas lagi, dia bakal manggil fungsi yang
+  // butuh variabel yang belum "hidup" -> ReferenceError -> skrip berhenti
+  // total -> web putih polos & gabisa diapa-apain kayak kemarin.
+  if(USER_IDENTITY){
+    pinGate.classList.add('hidden');
+    updateLetterButtonVisibility();
+    startPresence();
+    startHeartbeat();
+    renderWeatherWidget();
+
+    if(sessionStorage.getItem('currentView') === 'chat'){
+      viewWelcome.classList.remove('is-active');
+      viewChat.classList.add('is-active');
+      syncMissed();
+      scrollToBottom();
+    }
   }
 </script>
 
