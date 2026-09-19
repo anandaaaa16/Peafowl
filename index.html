@@ -929,6 +929,7 @@
     transition: background 0.2s ease, transform 0.15s ease;
     margin-left: 6px;
   }
+  .emoji-toggle[hidden]{ display: none; }
   .emoji-toggle:hover{ background: rgba(224,128,152,0.22); }
   .emoji-toggle.active{ background: var(--wax); color: #fff; transform: scale(1.05); }
 
@@ -944,6 +945,7 @@
     transition: background 0.2s ease, transform 0.15s ease;
     padding: 0;
   }
+  .sticker-toggle[hidden]{ display: none; }
   .sticker-toggle img{ width: 18px; height: 18px; object-fit: contain; }
   .sticker-toggle:hover{ background: rgba(224,128,152,0.22); }
   .sticker-toggle.active{ background: var(--wax); transform: scale(1.05); }
@@ -955,12 +957,14 @@
     border: none;
     cursor: pointer;
     background: rgba(224,128,152,0.12);
+    color: #c9587c;
     font-size: 0.9rem;
     display: flex; align-items: center; justify-content: center;
     transition: background 0.2s ease, transform 0.15s ease;
   }
   .viewonce-toggle[hidden]{ display: none; }
   .viewonce-toggle:hover{ background: rgba(224,128,152,0.22); }
+  body.mode-malam .viewonce-toggle{ color: #fff0f4; }
 
   /* ---------- KARTU FOTO SEKALI-LIHAT DI CHAT ---------- */
   .viewonce-card{
@@ -1007,7 +1011,12 @@
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
+    touch-action: none;
+    cursor: grab;
+    transform-origin: center center;
+    will-change: transform;
   }
+  .viewonce-img.zoomed{ cursor: grabbing; }
   .viewonce-close{
     position: absolute;
     top: 22px; right: 14px;
@@ -1095,6 +1104,7 @@
     transition: transform 0.15s ease, opacity 0.2s ease;
     margin-right: 2px;
   }
+  .comment-send[hidden]{ display: none; }
   .comment-send:hover{ transform: translateY(-1px) scale(1.05); }
   .comment-send:disabled{ opacity: 0.55; cursor: default; transform: none; }
 
@@ -1250,11 +1260,11 @@
       <div class="message-row">
         <button type="button" class="emoji-toggle" id="emojiToggle" aria-label="Pilih emoji">☺</button>
         <button type="button" class="sticker-toggle" id="stickerToggle" aria-label="Pilih stiker"><img src="" alt="" id="stickerToggleIcon"></button>
-        <button type="button" class="viewonce-toggle" id="viewonceToggle" aria-label="Kirim foto sekali lihat" hidden>📷</button>
-        <input type="file" accept="image/*" id="viewonceFileInput" hidden>
         <input type="text" id="commentMessage" class="message-field" placeholder="reply here" maxlength="300" required autocomplete="off">
         <input type="text" class="hp-field" id="hpField" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <button type="submit" class="comment-send" id="commentSubmit" aria-label="Kirim balasan">♥</button>
+        <input type="file" accept="image/*" id="viewonceFileInput" hidden>
+        <button type="button" class="viewonce-toggle" id="viewonceToggle" aria-label="Kirim foto sekali lihat"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></button>
+        <button type="submit" class="comment-send" id="commentSubmit" aria-label="Kirim balasan" hidden>♥</button>
         <div class="emoji-panel" id="emojiPanel" hidden></div>
         <div class="sticker-panel" id="stickerPanel" hidden></div>
       </div>
@@ -1399,6 +1409,19 @@
           await presenceChannel.track({ identity: USER_IDENTITY });
         }
       });
+  }
+
+  // baru dipanggil di sini, SETELAH presenceStarted siap -- ini yang
+  // kemarin ke-skip pas reload dan bikin seluruh skrip berhenti total
+  if(USER_IDENTITY){
+    pinGate.classList.add('hidden');
+    updateLetterButtonVisibility();
+    startPresence();
+    startHeartbeat();
+    // renderWeatherWidget() SENGAJA gak dipanggil di sini -- variabel
+    // cuacanya belum siap di titik ini. fetchWeather() (dipanggil di
+    // bawah) bakal otomatis manggil renderWeatherWidget() sendiri begitu
+    // datanya nyampe, karena USER_IDENTITY udah pasti ke-set duluan.
   }
 
   pinForm.addEventListener('submit', async (e) => {
@@ -1828,7 +1851,7 @@
     const willOpen = stickerPanel.hidden;
     stickerPanel.hidden = !willOpen;
     stickerToggle.classList.toggle('active', willOpen);
-    // panel emoji ditutup biar gak numpuk berdua
+    // panel emoji ditutup biar gak numpuk
     emojiPanel.hidden = true;
     emojiToggle.classList.remove('active');
   });
@@ -2040,6 +2063,25 @@
   const VIEWONCE_BASE_URL = SUPABASE_URL + '/storage/v1/object/public/stories/';
   function viewonceUrl(path){ return VIEWONCE_BASE_URL + encodeURIComponent(path); }
 
+  // ---------- TOGGLE TOMBOL FOTO <-> TOMBOL KIRIM ----------
+  // kolom teks kosong & belum difokus -> tampil ikon kamera (kirim foto sekali-lihat)
+  // begitu kolom teks difokus ATAU sudah ada isinya -> ganti jadi tombol kirim (♥)
+  // Ditaruh di sini (SETELAH viewonceToggle dideklarasikan di atas), bukan
+  // lebih awal, biar gak kena bug "Cannot access before initialization"
+  // yang sama kayak kasus weatherData kemarin.
+  function updateComposerButtons(){
+    const hasText = commentMessage.value.trim().length > 0;
+    const focused = document.activeElement === commentMessage;
+    const showSend = hasText || focused;
+    commentSubmit.hidden = !showSend;
+    viewonceToggle.hidden = showSend;
+  }
+
+  commentMessage.addEventListener('focus', updateComposerButtons);
+  commentMessage.addEventListener('blur', updateComposerButtons);
+  commentMessage.addEventListener('input', updateComposerButtons);
+  updateComposerButtons();
+
   viewonceToggle.addEventListener('mousedown', (e) => e.preventDefault());
   viewonceToggle.addEventListener('click', () => viewonceFileInput.click());
 
@@ -2091,6 +2133,7 @@
   async function openViewonce(row, cardEl){
     if(row.viewonce_opened) return; // udah pernah dibuka, gak bisa dibuka lagi
 
+    resetZoom();
     viewonceImg.src = viewonceUrl(row.viewonce_photo);
     viewonceOverlay.hidden = false;
 
@@ -2110,7 +2153,102 @@
   viewonceClose.addEventListener('click', () => {
     viewonceOverlay.hidden = true;
     viewonceImg.src = '';
+    resetZoom();
   });
+
+  // ---------- ZOOM IN/OUT & GESER (pinch, double-tap, drag) ----------
+  let zoomScale = 1;
+  let zoomX = 0, zoomY = 0;
+  const ZOOM_MIN = 1, ZOOM_MAX = 4;
+  const activePointers = new Map();
+  let pinchStartDist = 0;
+  let pinchStartScale = 1;
+  let panStart = null; // { x, y, zoomX, zoomY }
+  let lastTapTime = 0;
+  let lastTapPos = { x: 0, y: 0 };
+
+  function resetZoom(){
+    zoomScale = 1; zoomX = 0; zoomY = 0;
+    applyZoomTransform();
+  }
+
+  function applyZoomTransform(){
+    viewonceImg.style.transform = `translate(${zoomX}px, ${zoomY}px) scale(${zoomScale})`;
+    viewonceImg.classList.toggle('zoomed', zoomScale > 1);
+  }
+
+  function pointerDistance(){
+    const pts = [...activePointers.values()];
+    const dx = pts[0].x - pts[1].x;
+    const dy = pts[0].y - pts[1].y;
+    return Math.hypot(dx, dy);
+  }
+
+  viewonceImg.addEventListener('pointerdown', (e) => {
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    viewonceImg.setPointerCapture(e.pointerId);
+
+    if(activePointers.size === 2){
+      pinchStartDist = pointerDistance();
+      pinchStartScale = zoomScale;
+      panStart = null;
+    } else if(activePointers.size === 1){
+      panStart = { x: e.clientX, y: e.clientY, zoomX, zoomY };
+    }
+  });
+
+  viewonceImg.addEventListener('pointermove', (e) => {
+    if(!activePointers.has(e.pointerId)) return;
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if(activePointers.size === 2){
+      const newDist = pointerDistance();
+      const ratio = newDist / pinchStartDist;
+      zoomScale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, pinchStartScale * ratio));
+      applyZoomTransform();
+    } else if(activePointers.size === 1 && zoomScale > 1 && panStart){
+      zoomX = panStart.zoomX + (e.clientX - panStart.x);
+      zoomY = panStart.zoomY + (e.clientY - panStart.y);
+      applyZoomTransform();
+    }
+  });
+
+  function endPointer(e){
+    activePointers.delete(e.pointerId);
+    if(activePointers.size < 2) pinchStartDist = 0;
+    if(activePointers.size === 0) panStart = null;
+  }
+  viewonceImg.addEventListener('pointerup', endPointer);
+  viewonceImg.addEventListener('pointercancel', endPointer);
+
+  // double-tap / double-click buat toggle zoom cepat
+  viewonceImg.addEventListener('pointerup', (e) => {
+    const now = Date.now();
+    const dx = Math.abs(e.clientX - lastTapPos.x);
+    const dy = Math.abs(e.clientY - lastTapPos.y);
+    if(now - lastTapTime < 320 && dx < 25 && dy < 25){
+      if(zoomScale > 1){
+        resetZoom();
+      } else {
+        zoomScale = 2.5;
+        zoomX = 0; zoomY = 0;
+        applyZoomTransform();
+      }
+      lastTapTime = 0;
+    } else {
+      lastTapTime = now;
+      lastTapPos = { x: e.clientX, y: e.clientY };
+    }
+  });
+
+  // scroll wheel buat zoom di desktop
+  viewonceImg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.2 : -0.2;
+    zoomScale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomScale + delta));
+    if(zoomScale === ZOOM_MIN){ zoomX = 0; zoomY = 0; }
+    applyZoomTransform();
+  }, { passive: false });
 
   commentsList.addEventListener('click', (e) => {
     const card = e.target.closest('.viewonce-card');
@@ -2458,25 +2596,15 @@
 
   loadComments();
 
-  // ---------- RESTORE SESI SETELAH RELOAD ----------
-  // Ditaruh PALING BAWAH sengaja, setelah semua variabel & fungsi (termasuk
-  // weatherData, commentsList, syncMissed, dll) selesai didefinisikan.
-  // Kalau blok ini dipindah ke atas lagi, dia bakal manggil fungsi yang
-  // butuh variabel yang belum "hidup" -> ReferenceError -> skrip berhenti
-  // total -> web putih polos & gabisa diapa-apain kayak kemarin.
-  if(USER_IDENTITY){
-    pinGate.classList.add('hidden');
-    updateLetterButtonVisibility();
-    startPresence();
-    startHeartbeat();
-    renderWeatherWidget();
-
-    if(sessionStorage.getItem('currentView') === 'chat'){
-      viewWelcome.classList.remove('is-active');
-      viewChat.classList.add('is-active');
-      syncMissed();
-      scrollToBottom();
-    }
+  // begitu reload, kalau identitas masih diinget DAN sebelumnya lagi di
+  // Chat, langsung balik ke Chat lagi -- gak direset ke Halaman Depan.
+  // Ditaruh di paling akhir biar semua variabel chat (lastSeenAt, dll)
+  // sudah pasti siap duluan sebelum dipakai.
+  if(USER_IDENTITY && sessionStorage.getItem('currentView') === 'chat'){
+    viewWelcome.classList.remove('is-active');
+    viewChat.classList.add('is-active');
+    syncMissed();
+    scrollToBottom();
   }
 </script>
 
