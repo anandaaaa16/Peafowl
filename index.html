@@ -964,38 +964,66 @@
   }
   .viewonce-toggle[hidden]{ display: none; }
   .viewonce-toggle:hover{ background: rgba(224,128,152,0.22); }
-  body.mode-malam .viewonce-toggle{ color: #fff0f4; }
+  .viewonce-toggle svg{
+    width: 16px;
+    height: 16px;
+    display: block;
+    stroke: currentColor !important;
+    fill: none !important;
+  }
 
   /* ---------- KARTU FOTO SEKALI-LIHAT DI CHAT ---------- */
   .viewonce-card{
     display: flex;
     align-items: center;
     gap: 10px;
-    background: linear-gradient(160deg, #2b2b3a, #1e1e28);
-    border-radius: 14px;
-    padding: 12px 16px;
+    background: linear-gradient(160deg, #ffffff, #fdf0f4);
+    border-radius: 14px 4px 14px 14px;
+    padding: 10px 14px;
     max-width: 210px;
     cursor: pointer;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
-    transition: transform 0.15s ease;
+    box-shadow: 0 2px 6px rgba(217,90,125,0.1);
+    transition: transform 0.15s ease, opacity 0.2s ease;
+  }
+  .viewonce-card.admin{
+    background: linear-gradient(160deg, var(--admin-blue-light), var(--admin-blue));
+    border-radius: 4px 14px 14px 14px;
+    box-shadow: 0 2px 6px rgba(75,125,224,0.25);
   }
   .viewonce-card:hover{ transform: translateY(-2px); }
-  .viewonce-card.opened{ cursor: default; opacity: 0.6; }
+  .viewonce-card.opened{ cursor: default; opacity: 0.55; }
   .viewonce-card.opened:hover{ transform: none; }
-  .viewonce-card-icon{ font-size: 1.3rem; flex: none; }
+
+  .viewonce-card-badge{
+    flex: none;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--wax);
+    color: var(--wax);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+  .viewonce-card.admin .viewonce-card-badge{ border-color: #fff; color: #fff; }
+
   .viewonce-card-text{ text-align: left; }
   .viewonce-card-title{
     font-family: 'Trebuchet MS', Helvetica, Arial, sans-serif;
     font-size: 0.82rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--ink);
     margin: 0;
   }
+  .viewonce-card.admin .viewonce-card-title{ color: #fff; }
   .viewonce-card-hint{
     font-size: 0.65rem;
-    color: rgba(255,255,255,0.6);
+    color: #c9748f;
     margin: 2px 0 0;
   }
+  .viewonce-card.admin .viewonce-card-hint{ color: rgba(255,255,255,0.75); }
 
   .viewonce-overlay{
     position: fixed;
@@ -2139,7 +2167,6 @@
 
     if(cardEl){
       cardEl.classList.add('opened');
-      cardEl.querySelector('.viewonce-card-icon').textContent = '📷';
       cardEl.querySelector('.viewonce-card-hint').textContent = 'Opened';
     }
 
@@ -2373,8 +2400,8 @@
       const opened = !!row.viewonce_opened;
       item.innerHTML = `
         <p class="comment-name">${escapeHtml(displayName)}</p>
-        <div class="viewonce-card${opened ? ' opened' : ''}" data-id="${row.id}">
-          <span class="viewonce-card-icon">${opened ? '📷' : '📸'}</span>
+        <div class="viewonce-card${isAdmin ? ' admin' : ''}${opened ? ' opened' : ''}" data-id="${row.id}">
+          <span class="viewonce-card-badge">1</span>
           <div class="viewonce-card-text">
             <p class="viewonce-card-title">Photo</p>
             <p class="viewonce-card-hint">${opened ? 'Opened' : 'Tap to view once'}</p>
@@ -2587,7 +2614,6 @@
         const photoEl = commentsList.querySelector(`.viewonce-card[data-id="${payload.new.id}"]`);
         if(photoEl && !photoEl.classList.contains('opened')){
           photoEl.classList.add('opened');
-          photoEl.querySelector('.viewonce-card-icon').textContent = '📷';
           photoEl.querySelector('.viewonce-card-hint').textContent = 'Opened';
         }
       }
